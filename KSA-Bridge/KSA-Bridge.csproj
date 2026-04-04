@@ -77,6 +77,11 @@
       <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Strings.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Physics types (transitive dep from KSA.dll) -->
+    <Reference Include="BepuPhysics">
+      <HintPath>C:\Program Files\Kitten Space Agency\BepuPhysics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- Common types for ImGui (Ptr) -->
     <Reference Include="Brutal.Core.Common">
       <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Common.dll</HintPath>
