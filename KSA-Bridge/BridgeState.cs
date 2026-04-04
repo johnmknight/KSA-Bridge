@@ -73,6 +73,7 @@ public class BridgeState
 
     // ── UI Display Fields ──────────────────────────────────────────
     public volatile string? ConfigPath = null;
+    public volatile string? WebServerUrl = null;
     public DateTime LastPublishTime = DateTime.MinValue;
     
     // Last telemetry data (for UI display) - volatile for thread safety

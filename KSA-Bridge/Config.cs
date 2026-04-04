@@ -28,6 +28,10 @@ public class BridgeConfig
     public bool   ShowStatusBar  { get; set; } = true;
     public bool   ShowDebugPanel { get; set; } = false;
 
+    // ── Web Server ───────────────────────────────────────────────
+    public bool   WebServerEnabled { get; set; } = true;
+    public int    WebServerPort    { get; set; } = 8088;
+
     // ── Derived: millisecond intervals ───────────────────────────
     public int TelemetryIntervalMs  => 1000 / Math.Max(1, TelemetryHz);
     public int OrbitIntervalMs      => 1000 / Math.Max(1, OrbitHz);
@@ -79,6 +83,13 @@ public class BridgeConfig
             {
                 cfg.ShowStatusBar  = GetBool(ui, "show_status_bar",  cfg.ShowStatusBar);
                 cfg.ShowDebugPanel = GetBool(ui, "show_debug_panel", cfg.ShowDebugPanel);
+            }
+
+            // [webserver]
+            if (model.TryGetValue("webserver", out var wsRaw) && wsRaw is TomlTable ws)
+            {
+                cfg.WebServerEnabled = GetBool(ws, "enabled", cfg.WebServerEnabled);
+                cfg.WebServerPort    = GetInt(ws,  "port",    cfg.WebServerPort);
             }
 
             Console.WriteLine($"[KSA-Bridge] Config loaded from {path}");

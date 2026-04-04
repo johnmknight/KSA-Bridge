@@ -28,6 +28,7 @@ public class Bridge
     private Publisher?           _publisher;
     private TelemetryPublisher?  _telemetry;
     private BridgeUi?            _ui;
+    private StaticFileServer?    _webServer;
     private BridgeState          _state  = new();
     private BridgeConfig         _config = new();
     private string               _configPath = string.Empty;
@@ -123,6 +124,17 @@ public class Bridge
             // Start MQTT connection (fire-and-forget; Publisher handles reconnect)
             _ = _publisher.StartAsync();
 
+            // Start HTTP file server for mission control consoles
+            if (_config.WebServerEnabled)
+            {
+                // Web root: "web" directory next to the mod DLL
+                string modDir = Path.GetDirectoryName(typeof(Bridge).Assembly.Location) ?? ".";
+                string webRoot = Path.Combine(modDir, "web");
+                _webServer = new StaticFileServer(webRoot, _config.WebServerPort);
+                _webServer.Start();
+                _state.WebServerUrl = _webServer.IsRunning ? _webServer.BaseUrl : null;
+            }
+
             Console.WriteLine("[KSA-Bridge] Ready. Status bar: Ctrl+B or ksa/bridge/cmd/* for control.");
         }
         catch (Exception ex)
@@ -199,7 +211,9 @@ public class Bridge
     public void OnUnload()
     {
         Console.WriteLine("[KSA-Bridge] Unloading");
-        
+
+        _webServer?.Dispose();
+
         if (_publisher != null)
         {
             _ = _publisher.DisposeAsync();
