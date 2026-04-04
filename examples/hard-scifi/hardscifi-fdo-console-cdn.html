@@ -267,7 +267,7 @@
 
 const RAD2DEG = 180 / Math.PI;
 const DEG2RAD = Math.PI / 180;
-const EARTH_R = 6371; // km — scale: 1 unit = 1 km
+const GLOBE_R = 6371; // visual scale: 1 unit = 1 km (not tied to any specific body)
 const getStart = Date.now();
 // ── STATE ────────────────────────────────────────────────────
 const state = {
@@ -285,6 +285,7 @@ const state = {
   posX:null, posY:null, posZ:null, velX:null, velY:null, velZ:null,
   // Parent body rotation (CCF→CCI quaternion)
   bodyRotQx:0, bodyRotQy:0, bodyRotQz:0, bodyRotQw:1, axialTilt:0,
+  bodyName:null, bodyMeanRadius:null,
   connected:false, topicCount:0, lastDataTime:0
 };
 // ── THEME COLOR MAPS (for Three.js scene) ───────────────────
@@ -448,20 +449,20 @@ scene.add(earthGroup);
 
 // Solid dark sphere (core)
 const coreMat = new THREE.MeshBasicMaterial({ color:0x050a18, transparent:true, opacity:0.6 });
-const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R * 0.995, 64, 64), coreMat);
+const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R * 0.995, 64, 64), coreMat);
 earthGroup.add(coreMesh);
 
 // Wireframe sphere (holographic shell)
 const wireMat = new THREE.MeshBasicMaterial({ color:0x1a3a6a, wireframe:true, transparent:true, opacity:0.12 });
-const wireMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, 48, 48), wireMat);
+const wireMesh = new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R, 48, 48), wireMat);
 earthGroup.add(wireMesh);
 
 // Latitude lines (every 30°)
 const latLineMat = new THREE.LineBasicMaterial({ color:0x2255aa, transparent:true, opacity:0.25 });
 for (let lat = -60; lat <= 60; lat += 30) {
   if (lat === 0) continue; // equator drawn separately
-  const r = EARTH_R * Math.cos(lat * DEG2RAD);
-  const y = EARTH_R * Math.sin(lat * DEG2RAD);
+  const r = GLOBE_R * Math.cos(lat * DEG2RAD);
+  const y = GLOBE_R * Math.sin(lat * DEG2RAD);
   const pts = [];
   for (let i = 0; i <= 128; i++) {
     const a = (i / 128) * Math.PI * 2;
@@ -474,7 +475,7 @@ for (let lat = -60; lat <= 60; lat += 30) {
 const eqPts = [];
 for (let i = 0; i <= 128; i++) {
   const a = (i / 128) * Math.PI * 2;
-  eqPts.push(new THREE.Vector3(EARTH_R * Math.cos(a), 0, EARTH_R * Math.sin(a)));
+  eqPts.push(new THREE.Vector3(GLOBE_R * Math.cos(a), 0, GLOBE_R * Math.sin(a)));
 }
 earthGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(eqPts),
   new THREE.LineBasicMaterial({ color:0x3366cc, transparent:true, opacity:0.45 })));
@@ -484,9 +485,9 @@ for (let lon = 0; lon < 360; lon += 30) {
   const pts = [];
   for (let i = 0; i <= 128; i++) {
     const lat = (i / 128) * Math.PI - Math.PI / 2;
-    const x = EARTH_R * Math.cos(lat) * Math.cos(lon * DEG2RAD);
-    const y = EARTH_R * Math.sin(lat);
-    const z = EARTH_R * Math.cos(lat) * Math.sin(lon * DEG2RAD);
+    const x = GLOBE_R * Math.cos(lat) * Math.cos(lon * DEG2RAD);
+    const y = GLOBE_R * Math.sin(lat);
+    const z = GLOBE_R * Math.cos(lat) * Math.sin(lon * DEG2RAD);
     pts.push(new THREE.Vector3(x, y, z));
   }
   earthGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lonLineMat));
@@ -512,16 +513,21 @@ const atmoFrag = `
     gl_FragColor = vec4(col, intensity * 0.5);
   }`;
 const atmoMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(EARTH_R + 100, 64, 64),
+  new THREE.SphereGeometry(GLOBE_R + 100, 64, 64),
   new THREE.ShaderMaterial({ vertexShader:atmoVert, fragmentShader:atmoFrag, transparent:true, side:THREE.BackSide, depthWrite:false, blending:THREE.AdditiveBlending })
 );
 earthGroup.add(atmoMesh);
 
-// ── CONTINENT OUTLINES ──────────────────────────────────────
-// Load Natural Earth 110m land boundaries and render as holographic line segments
+// ── SURFACE FEATURE DATA ────────────────────────────────────
+// Dynamic loading of surface outlines per body (coastlines for Earth, mare/craters for others)
+// Data files served from the HTTP server's data/ directory
 const coastlineMat = new THREE.LineBasicMaterial({
-  color: 0x4a9eff, transparent: true, opacity: 0.45, depthWrite: false
+  color: currentThemeColors.coast, transparent: true, opacity: currentThemeColors.coastOp, depthWrite: false
 });
+const craterMat = new THREE.LineBasicMaterial({
+  color: currentThemeColors.coast, transparent: true, opacity: currentThemeColors.coastOp * 0.6, depthWrite: false
+});
+
 function latLonToVec3(lat, lon, r) {
   const phi = (90 - lat) * Math.PI / 180;
   const theta = (lon + 180) * Math.PI / 180;
@@ -531,33 +537,148 @@ function latLonToVec3(lat, lon, r) {
      r * Math.sin(phi) * Math.sin(theta)
   );
 }
-// Coastline data: Natural Earth 110m land boundaries (public domain)
-// Loaded at runtime from CDN — no local files needed
-fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
-  .then(r => r.json())
-  .then(world => {
-    // Import topojson-client inline for this one operation
+
+// Track surface feature meshes so we can remove them on body change
+let surfaceFeatures = [];
+
+function clearSurfaceFeatures() {
+  surfaceFeatures.forEach(obj => {
+    earthGroup.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  surfaceFeatures = [];
+}
+
+// Render GeoJSON/TopoJSON polygons and lines onto the globe
+function renderFeatures(geojson, material, radius) {
+  const features = geojson.type === 'FeatureCollection' ? geojson.features :
+                   geojson.type === 'Feature' ? [geojson] : [];
+  // Also handle bare geometry (from topojson.feature with a single geometry)
+  const geoms = features.length > 0 ? features :
+                (geojson.type === 'GeometryCollection' ? geojson.geometries.map(g => ({geometry:g})) : []);
+
+  geoms.forEach(feature => {
+    const geom = feature.geometry;
+    if (!geom) return;
+    let coordSets = [];
+    if (geom.type === 'Polygon') {
+      coordSets = geom.coordinates;
+    } else if (geom.type === 'MultiPolygon') {
+      geom.coordinates.forEach(poly => coordSets.push(...poly));
+    } else if (geom.type === 'LineString') {
+      coordSets = [geom.coordinates];
+    } else if (geom.type === 'MultiLineString') {
+      coordSets = geom.coordinates;
+    }
+    coordSets.forEach(ring => {
+      if (ring.length < 2) return;
+      const pts = ring.map(c => latLonToVec3(c[1], c[0], radius));
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const line = new THREE.Line(geo, material);
+      earthGroup.add(line);
+      surfaceFeatures.push(line);
+    });
+  });
+}
+
+// Body data configuration: what files to load for each body
+const bodyDataConfig = {
+  'Earth': {
+    outlines: { url: 'https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json', type: 'topojson', objectKey: 'land' }
+  },
+  'Moon': {
+    outlines: { url: 'data/moon_mare.topojson', type: 'topojson' },
+    craters: { url: 'data/moon_craters.topojson', type: 'topojson' },
+    labels:  { url: 'data/moon_labels.json', type: 'labels' }
+  },
+  'Mars': {
+    craters: { url: 'data/mars_craters.topojson', type: 'topojson' },
+    labels:  { url: 'data/mars_labels.json', type: 'labels' }
+  },
+  'Mercury': {
+    craters: { url: 'data/mercury_craters.topojson', type: 'topojson' },
+    labels:  { url: 'data/mercury_labels.json', type: 'labels' }
+  },
+  'Venus': {
+    craters: { url: 'data/venus_craters.topojson', type: 'topojson' },
+    labels:  { url: 'data/venus_labels.json', type: 'labels' }
+  }
+};
+
+let currentBodyName = null;
+let topojsonLoaded = false;
+
+function ensureTopojsonClient() {
+  return new Promise((resolve) => {
+    if (topojsonLoaded || typeof topojson !== 'undefined') {
+      topojsonLoaded = true;
+      resolve();
+      return;
+    }
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js';
-    script.onload = () => {
-      const land = topojson.feature(world, world.objects.land);
-      const geoms = land.type === 'FeatureCollection' ? land.features : [land];
-      geoms.forEach(feature => {
-        const coords = feature.geometry.type === 'Polygon'
-          ? [feature.geometry.coordinates]
-          : feature.geometry.coordinates;
-        coords.forEach(polygon => {
-          polygon.forEach(ring => {
-            const pts = ring.map(c => latLonToVec3(c[1], c[0], EARTH_R * 1.001));
-            const geo = new THREE.BufferGeometry().setFromPoints(pts);
-            earthGroup.add(new THREE.Line(geo, coastlineMat));
-          });
-        });
-      });
-    };
+    script.onload = () => { topojsonLoaded = true; resolve(); };
     document.head.appendChild(script);
-  })
-  .catch(e => console.warn('[FDO] Could not load coastlines:', e));
+  });
+}
+
+async function loadBodyData(bodyName) {
+  if (bodyName === currentBodyName) return;
+  currentBodyName = bodyName;
+  clearSurfaceFeatures();
+  logEvent('BODY: ' + bodyName);
+
+  const config = bodyDataConfig[bodyName];
+  if (!config) {
+    console.warn('[FDO] No surface data configured for body:', bodyName);
+    return;
+  }
+
+  await ensureTopojsonClient();
+
+  // Load outline data (coastlines/mare boundaries)
+  if (config.outlines) {
+    try {
+      const resp = await fetch(config.outlines.url);
+      const data = await resp.json();
+      if (config.outlines.type === 'topojson') {
+        const objectKey = config.outlines.objectKey || Object.keys(data.objects)[0];
+        const geojson = topojson.feature(data, data.objects[objectKey]);
+        renderFeatures(geojson, coastlineMat, GLOBE_R * 1.001);
+      } else {
+        renderFeatures(data, coastlineMat, GLOBE_R * 1.001);
+      }
+    } catch(e) { console.warn('[FDO] Failed to load outlines for', bodyName, e); }
+  }
+
+  // Load crater/feature ring data
+  if (config.craters) {
+    try {
+      const resp = await fetch(config.craters.url);
+      const data = await resp.json();
+      if (config.craters.type === 'topojson') {
+        const objectKey = Object.keys(data.objects)[0];
+        const geojson = topojson.feature(data, data.objects[objectKey]);
+        renderFeatures(geojson, craterMat, GLOBE_R * 1.001);
+      } else {
+        renderFeatures(data, craterMat, GLOBE_R * 1.001);
+      }
+    } catch(e) { console.warn('[FDO] Failed to load craters for', bodyName, e); }
+  }
+
+  // Load named feature labels
+  if (config.labels) {
+    try {
+      const resp = await fetch(config.labels.url);
+      const labels = await resp.json();
+      // Future: render label sprites. For now, store for later use.
+      state.bodyLabels = labels;
+    } catch(e) { console.warn('[FDO] Failed to load labels for', bodyName, e); }
+  }
+}
+
+// Default: load Earth data on startup
+loadBodyData('Earth');
 
 // ── 3D ORBIT OBJECTS ────────────────────────────────────────
 let orbitLine = null;       // THREE.Line for the orbit ellipse
@@ -759,6 +880,11 @@ client.on('message', (topic, payload) => {
         if (d.rotationQuatZ != null) state.bodyRotQz = d.rotationQuatZ;
         if (d.rotationQuatW != null) state.bodyRotQw = d.rotationQuatW;
         if (d.axialTilt != null) state.axialTilt = d.axialTilt;
+        if (d.bodyName != null) {
+          state.bodyName = d.bodyName;
+          loadBodyData(d.bodyName);
+        }
+        if (d.meanRadius != null) state.bodyMeanRadius = d.meanRadius;
         break;
     }
   } catch(err) {
@@ -913,6 +1039,11 @@ function applyThemeToScene(t) {
       else { m.color.setHex(t.lat); m.opacity = t.latOp; }
     }
   });
+  // Surface feature materials
+  coastlineMat.color.setHex(t.coast);
+  coastlineMat.opacity = t.coastOp;
+  craterMat.color.setHex(t.coast);
+  craterMat.opacity = t.coastOp * 0.6;
   // Markers
   if (shipMarker) shipMarker.material.color.setHex(t.ship);
   if (apoMarker) apoMarker.material.color.setHex(t.apo);

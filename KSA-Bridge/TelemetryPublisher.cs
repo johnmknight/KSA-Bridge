@@ -591,6 +591,31 @@ public class TelemetryPublisher
                 ["sphereOfInfluence"] = parent.SphereOfInfluence
             };
 
+            // Try to get the body name via reflection (on Celestial or concrete type)
+            try
+            {
+                var nameProp = parent.GetType().GetProperty("Name");
+                if (nameProp != null)
+                {
+                    var name = nameProp.GetValue(parent)?.ToString();
+                    if (!string.IsNullOrEmpty(name)) parentBodyData["bodyName"] = name;
+                }
+                // Fallback: try DisplayName
+                if (!parentBodyData.ContainsKey("bodyName"))
+                {
+                    var dispProp = parent.GetType().GetProperty("DisplayName");
+                    if (dispProp != null)
+                    {
+                        var dispName = dispProp.GetValue(parent)?.ToString();
+                        if (!string.IsNullOrEmpty(dispName)) parentBodyData["bodyName"] = dispName;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                parentBodyData["bodyNameError"] = ex.Message;
+            }
+
             // Try GetAngularVelocity() - declared on IParentBody
             try
             {
