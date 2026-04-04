@@ -33,12 +33,14 @@ A phosphor-green terminal aesthetic inspired by 1960s NASA mission control.
 
 ```
 KSA Game ←→ KSA-Bridge (C# mod) → MQTT Broker (Mosquitto) → Web Consoles
-                                         ↑
-                                    Port 1884 (MQTT)
-                                    Port 9001 (WebSocket)
+                  ↓                      ↑
+             HTTP Server            Port 1884 (MQTT)
+          (port 8088, static)       Port 9001 (WebSocket)
 ```
 
 The mod uses the StarMap 0.4.x API to read vehicle and orbit data, then publishes JSON payloads via MQTTnet. Web consoles connect over WebSocket (port 9001) using mqtt.js.
+
+An embedded HTTP file server (System.Net.HttpListener) serves the mission control console pages and data files from a `web/` directory next to the mod DLL. This eliminates CORS issues that block `file://` URLs from fetching data at runtime — essential for loading planet surface data, topojson files, and other assets without embedding them into the HTML.
 
 ## MQTT Topics
 
@@ -77,13 +79,19 @@ The mod uses the StarMap 0.4.x API to read vehicle and orbit data, then publishe
 
 3. **Deploy** the built DLL to your KSA mods directory:
    ```
-   <KSA Install>/mods/KSA-Bridge/KSA-Bridge.dll
+   <KSA Install>/mods/KSA-Bridge/
+     KSA-Bridge.dll
+     mod.toml
+     web/                              ← console files served by embedded HTTP server
+       hard-scifi/
+         hardscifi-fdo-console-cdn.html
+       apollo-mission-control/
+         apollo-fdo-console.html
    ```
-   Also copy `mod.toml` to the same directory.
 
-4. **Launch KSA** — the mod auto-connects to the MQTT broker and starts publishing.
+4. **Launch KSA** — the mod auto-connects to the MQTT broker, starts publishing telemetry, and launches the HTTP server.
 
-5. **Open a console** — open `examples/hard-scifi/hardscifi-fdo-console.html` in a browser.
+5. **Open a console** — browse to `http://127.0.0.1:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
 
 ## Coordinate Systems
 
