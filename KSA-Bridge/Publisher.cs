@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +47,7 @@ public class Publisher : IAsyncDisposable
         var offline = JsonSerializer.Serialize(new { status = "offline" });
 
         var options = new MqttClientOptionsBuilder()
-            .WithTcpServer(_config.BrokerHost, _config.BrokerPort)
+            .WithTcpServer(_config.BrokerHost, (int?)_config.BrokerPort, AddressFamily.Unspecified)
             .WithClientId(_config.ClientId)
             .WithKeepAlivePeriod(TimeSpan.FromSeconds(_config.KeepAlive))
             .WithWillTopic(StatusTopic)
