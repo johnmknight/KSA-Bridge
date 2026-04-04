@@ -1,0 +1,38 @@
+## .NET Build Artifacts
+bin/
+obj/
+*.user
+*.suo
+*.cache
+
+## KSA-Bridge runtime config (contains local paths)
+ksa-bridge.toml
+
+## IDE
+.vs/
+.vscode/
+.idea/
+
+## Node.js
+node_modules/
+package-lock.json
+
+## Build/deploy scripts and logs
+*.log
+build_output.txt
+build_errors.txt
+mqtt_sub_output.txt
+mqtt_sub_errors.txt
+
+## Debug & session artifacts
+InspectKSA/
+InspectTool/
+*_debug*.txt
+*_inspection*.txt
+*_inspection*.log
+parent_body_inspection.txt
+tool_list.txt
+
+## Temporary helper scripts
+download_libs.js
+embed_coastlines.js

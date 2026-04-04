@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>KSA-Bridge</AssemblyName>
+    <RootNamespace>KSABridge</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Suppress warning about missing game DLLs on CI / clean machines -->
+    <NoWarn>MSB3245</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MQTT client — shipped with the mod, not assumed to exist in game -->
+    <PackageReference Include="MQTTnet" Version="4.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
+    <!-- TOML config reader -->
+    <PackageReference Include="Tomlyn" Version="0.17.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <!-- StarMap mod loader API — removed PackageReference, using HintPath only -->
+  </ItemGroup>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       WORKAROUND for .NET 10 SDK bug with .NET 7 packages
+       NuGet isn't adding compile-time references for MQTTnet/Tomlyn.
+       Explicitly reference the .NET 7 DLLs from the NuGet cache.
+  ════════════════════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <Reference Include="MQTTnet">
+      <HintPath>$(NuGetPackageRoot)mqttnet\4.3.7.1207\lib\net7.0\MQTTnet.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Tomlyn">
+      <HintPath>$(NuGetPackageRoot)tomlyn\0.17.0\lib\net7.0\Tomlyn.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="StarMap.API">
+      <HintPath>C:\Program Files\StarMap\StarMap.API.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       KSA Game DLLs — HintPath references only.
+       Private=false means they are NOT copied to the output folder.
+       These must NEVER be shipped with the mod release.
+
+       ⚠️  BEFORE BUILDING: verify all filenames with:
+           dir "C:\Program Files\Kitten Space Agency\Brutal.*.dll"
+       Add or remove entries below to match what exists on disk.
+  ════════════════════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <Reference Include="KSA">
+      <HintPath>C:\Program Files\Kitten Space Agency\KSA.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- ImGui renderer — required for the in-game status panel -->
+    <Reference Include="Brutal.ImGui">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.ImGui.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Brutal.Core.Numerics">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Numerics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Brutal.Glfw">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Glfw.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- UI string types for ImGui -->
+    <Reference Include="Brutal.Core.Strings">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Strings.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Common types for ImGui (Ptr) -->
+    <Reference Include="Brutal.Core.Common">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

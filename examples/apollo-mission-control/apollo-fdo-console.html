@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<!-- saved from url=(0086)file:///C:/Users/john_/dev/KSA-Bridge/examples/apollo-mission-control/fdo-console.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSA-Bridge Sample — Apollo FDO Console [LIVE]</title>
+  <script src="./KSA-Bridge Sample — Apollo FDO Console [LIVE]_files/mqtt.min.js.download"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    @keyframes blink   { 0%,49% { opacity:1 } 50%,100% { opacity:0 } }
+    @keyframes flicker { 0%,100% { opacity:1 } 94% { opacity:.97 } 97% { opacity:.99 } }
+
+    .bezel {
+      background: #191919;
+      border: 3px solid #2c2c2c;
+      border-bottom-color: #0e0e0e;
+      border-right-color:  #0e0e0e;
+      border-radius: 5px;
+      padding: 12px;
+      max-width: 860px;
+      width: 100%;
+    }
+
+    .ridge {
+      background: #0f0f0f;
+      border: 2px solid #0a0a0a;
+      border-bottom-color: #222;
+      border-right-color:  #222;
+      padding: 5px;
+      border-radius: 2px;
+    }
+
+    .screen {
+      background: #000a00;
+      padding: 20px 26px;
+      position: relative;
+      overflow: hidden;
+      min-height: 580px;
+      animation: flicker 9s infinite;
+    }
+
+    /* CRT scanline overlay */
+    .screen::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 3px,
+        rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    #display {
+      margin: 0;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      line-height: 1.58;
+      color: #00b800;
+      position: relative;
+      z-index: 6;
+      white-space: pre;
+    }
+
+    /* Phosphor color classes */
+    .b    { color: #3fff3f; }             /* bright — active values      */
+    .d    { color: #005800; }             /* dim    — labels, structure   */
+    .h    { color: #009200; }             /* mid    — section headers     */
+    .nom  { color: #00b800; }             /* nominal status               */
+    .sim  { color: #003e00; }             /* simulation badge             */
+    .live { color: #00b800; font-weight: bold; }  /* live connection status */
+    .caut { color: #b8b800; }             /* caution status               */
+    .alrm { color: #ff2000; animation: blink .5s step-start infinite; }
+    .safe { color: #00b800; }             /* abort safe                   */
+    .armd { color: #ff2000; animation: blink .8s step-start infinite; }
+
+    /* Bezel indicator LEDs */
+    .bezel-foot {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 7px 6px 2px;
+      gap: 9px;
+    }
+    .led {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+    .led-off { background: #020802; border: 1px solid #181818; }
+    .led-pwr { background: #001600; border: 1px solid #003600; }
+  </style>
+</head>
+<body>
+
+<div class="bezel">
+  <div class="ridge">
+    <div class="screen">
+      <pre id="display"><span class="d">MSC HOUSTON  MOCR-2</span><span class="d">                       STATION: </span><span class="b">FDO</span>
+<span class="d">════════════════════════════════════════════════════════════</span>
+  <span class="d">VEH</span> <span class="b">Rocket         </span> <span class="d">GET</span> <span class="b">009:52:45</span>  <span class="d">PHASE:</span> <span class="b">FREEFALL</span>  <span class="live">[HOLD]</span>
+  <span class="d">BODY:</span> <span class="b">Earth</span>
+<span class="d">────────────────────────────────────────────────────────────</span>
+
+<span class="d">  ┌─ ABORT AUTHORITY ─────────────────────────────────┐
+</span>  │ TOGGLE: <span class="safe">  ● SAFE   </span>  MODE: <span class="b">AOA                 </span> │
+<span class="d">  └───────────────────────────────────────────────────┘
+
+</span>  <span class="d">PARAMETER             </span><span class="d">    ACTUAL</span>  <span class="d">UNITS  </span> <span class="d">  Δ PLAN</span>  <span class="d">STATUS</span>
+<span class="d">────────────────────────────────────────────────────────────</span>
+  VELOCITY                  7784.4  M/SEC   <span class="d"> +7784.4</span>  <span class="caut">● CAUT</span>
+  ALT MSL                      ---  KM      <span class="d">       ─</span>  <span class="d">---</span>
+  FLT PATH ANGLE               ---  DEG     <span class="d">       ─</span>  <span class="d">---</span>
+  INS DELTA-V                  ---  M/SEC   <span class="d">       ─</span>  <span class="d">---</span>
+  GROUND TRACK                 ---  KM      <span class="d">       ─</span>  <span class="d">---</span>
+
+<span class="d">  ORBITAL ELEMENTS
+</span><span class="d">────────────────────────────────────────────────────────────</span>
+  APOAPSIS                   207.0  KM      <span class="d">  +207.0</span>  <span class="caut">● CAUT</span>
+  PERIAPSIS                  207.0  KM      <span class="d">  +207.0</span>  <span class="caut">● CAUT</span>
+  ECCENTRICITY            0.000000          <span class="d">       ─</span>  <span class="nom">● NOM </span>
+  INCLINATION                  ---  DEG     <span class="d">       ─</span>  <span class="d">---</span>
+  PERIOD                     88.49  MIN     <span class="d">       ─</span>  <span class="nom">● NOM </span>
+
+<span class="d">  ORBITAL TIMING
+</span><span class="d">────────────────────────────────────────────────────────────</span>
+  TIME TO APOAPSIS        00:55:31  HH:MM:SS <span class="d">       ─</span>  <span class="nom">● NOM </span>
+  TIME TO PERIAPSIS       00:11:16  HH:MM:SS <span class="d">       ─</span>  <span class="nom">● NOM </span>
+
+<span class="d">  DEBUG: ORBITAL TIMING VALIDATION
+</span><span class="d">────────────────────────────────────────────────────────────</span>
+  TSP.Days                     -0.0154503917
+  TSP.Seconds                       -1334.91
+  NextPeriapsisTime              KSA.SimTime
+  NextApoapsisTime               KSA.SimTime
+  NextPatchEventTime             KSA.SimTime
+
+<span class="d">  FDO EVENT LOG
+</span><span class="d">────────────────────────────────────────────────────────────</span>
+  <span class="d">000:02:57  </span>MQTT LINK ESTABLISHED  TELEMETRY NOM
+
+  <span class="d">&gt; </span><span class="b">█</span></pre>
+    </div>
+  </div>
+  <div class="bezel-foot">
+    <div class="led led-off"></div>
+    <div class="led led-pwr"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// KSA-BRIDGE SAMPLE: APOLLO FDO CONSOLE DISPLAY [LIVE TELEMETRY]
+// Flight Dynamics Officer / Mission Operations Control Room 2
+// Manned Spacecraft Center, Houston, Texas
+//
+// Historical context:
+//   FDO ("Fido") was responsible for monitoring vehicle trajectory at all
+//   mission phases. FDO was one of only two stations (with FLIGHT) that held
+//   abort authority during launch, via a dedicated set of toggle switches.
+//   Deviations from the planned trajectory required immediate action.
+//
+// This display shows:
+//   - Real-time trajectory state vs planned trajectory (Δ PLAN column)
+//   - Full orbital elements (apoapsis, periapsis, eccentricity, inclination)
+//   - Orbital timing (time to next apoapsis and periapsis)
+//   - Insertion delta-v and flight path angle
+//   - Ground track distance
+//   - Abort authority status panel
+//   - FDO event log
+//
+// MQTT topics consumed from KSA-Bridge:
+//   ksa/telemetry/vehicle   { speed, altitude, totalMass }
+//   ksa/telemetry/orbit     { apoapsis, periapsis, eccentricity }
+//   ksa/bridge/status       { connected }
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── PHYSICAL CONSTANTS ──────────────────────────────────────────────────────
+const MU = 3.986e14;   // Earth gravitational parameter (m³/s²)
+const RE = 6371.0;     // Earth mean radius (km)
+
+// ── VEHICLE STATE ───────────────────────────────────────────────────────────
+// Updated in real-time by MQTT message handlers
+const st = {
+  velocity:    null,        // m/s   — from ksa/telemetry/vehicle → speed
+  altitude:    null,        // km    — from ksa/telemetry/vehicle → altitude
+  apo:         null,        // km    — from ksa/telemetry/orbit   → apoapsis
+  per:         null,        // km    — from ksa/telemetry/orbit   → periapsis
+  ecc:         null,        // –     — from ksa/telemetry/orbit   → eccentricity
+  inc:         null,        // deg   — not yet in KSA-Bridge; simulated
+  parentBody:  'UNKNOWN',   // –     — from ksa/telemetry/orbit   → parentBody
+  vehicle:     'NO VEHICLE',
+  phase:       'STANDBY',   // LAUNCH | ORBIT | TLI | RETURN
+  mqttStatus:  'HOLD',      // SIM | NOM | HOLD
+  abortArmed:  false        // true only during launch phase
+};
+
+// ── PLANNED TRAJECTORY TARGETS ──────────────────────────────────────────────
+// FDO's primary job: track deviation from the mission plan.
+// Update these to match the planned orbit for each mission.
+const plan = {
+  velocity: 0,   // m/s
+  altitude: 0,   // km
+  apo:      0,   // km
+  per:      0    // km
+};
+
+// ── TIMING REFERENCES ───────────────────────────────────────────────────────
+const getStart   = Date.now();  // GET epoch
+const orbitStart = Date.now();  // orbit insertion
+
+// Real orbital timing data from KSA (replaces calculated values)
+let timeToApo = null;      // milliseconds to apoapsis (from KSA)
+let timeToPer = null;      // milliseconds to periapsis (from KSA)
+let orbitalPeriod = null;  // seconds (from KSA)
+
+// ── DEBUG DATA (Orbital Timing Validation) ──────────────────────────────────
+const debug = {
+  timeSincePeriapsisDays: null,
+  timeSincePeriapsisSeconds: null,
+  nextPeriapsisTime: null,
+  nextApoapsisTime: null,
+  nextPatchEventTime: null
+};
+
+// ── FDO EVENT LOG ───────────────────────────────────────────────────────────
+const evlog = [];
+let firstTelemetryReceived = false;
+
+// ── MQTT CONNECTION ──────────────────────────────────────────────────────────
+// Connect to KSA-Bridge telemetry stream via MQTT WebSocket
+const client = mqtt.connect('ws://127.0.0.1:9001');
+
+client.on('connect', () => {
+  console.log('[FDO] Connected to KSA-Bridge MQTT broker');
+  st.mqttStatus = 'NOM';
+  client.subscribe([
+    'ksa/telemetry/vehicle',
+    'ksa/telemetry/orbit',
+    'ksa/bridge/status'
+  ], (err) => {
+    if (err) {
+      console.error('[FDO] Subscription error:', err);
+      st.mqttStatus = 'HOLD';
+    }
+    // Event log entry will be added when first telemetry is received
+  });
+});
+
+client.on('disconnect', () => {
+  console.log('[FDO] Disconnected from MQTT broker');
+  st.mqttStatus = 'HOLD';
+  evlog.push([formatGET(), 'MQTT LINK LOST  SWITCHING TO HOLD']);
+});
+
+client.on('message', (topic, payload) => {
+  try {
+    const d = JSON.parse(payload.toString());
+    
+    // DEBUG: Log all MQTT messages to see what data is available
+    console.log('[FDO DEBUG]', topic, ':', d);
+    
+    // Log first telemetry receipt
+    if (!firstTelemetryReceived && topic.includes('/vehicle')) {
+      firstTelemetryReceived = true;
+      evlog.push([formatGET(), 'MQTT LINK ESTABLISHED  TELEMETRY NOM']);
+    }
+    
+    switch(topic) {
+      case 'ksa/telemetry/vehicle':
+        if (d.vehicleName !== undefined) st.vehicle = d.vehicleName;
+        if (d.parentBody !== undefined) st.parentBody = d.parentBody;
+        if (d.situation !== undefined) st.phase = d.situation.toUpperCase();
+        if (d.speed !== undefined) st.velocity = d.speed;
+        if (d.altitude !== undefined) st.altitude = d.altitude / 1000; // Convert meters to kilometers
+        break;
+      case 'ksa/telemetry/orbit':
+        // DEBUG: Log the ENTIRE orbit message
+        console.log('[FDO] ORBIT DATA RECEIVED:', JSON.stringify(d, null, 2));
+        
+        // Capture parent body name
+        if (d.parentBody !== undefined) st.parentBody = d.parentBody;
+        
+        // Use elevation fields (altitude above surface) instead of raw apoapsis/periapsis (radius from center)
+        if (d.apoapsisElevation !== undefined) st.apo = d.apoapsisElevation / 1000; // Convert meters to kilometers
+        if (d.periapsisElevation !== undefined) st.per = d.periapsisElevation / 1000; // Convert meters to kilometers
+        if (d.eccentricity !== undefined) st.ecc = d.eccentricity;
+        // Use REAL orbital timing data from KSA instead of calculating it
+        if (d.timeToApoapsis !== undefined) {
+          timeToApo = d.timeToApoapsis * 1000; // Convert seconds to milliseconds
+          console.log('[FDO] timeToApoapsis received:', d.timeToApoapsis, 'seconds');
+        }
+        if (d.timeToPeriapsis !== undefined) {
+          timeToPer = d.timeToPeriapsis * 1000; // Convert seconds to milliseconds
+          console.log('[FDO] timeToPeriapsis received:', d.timeToPeriapsis, 'seconds');
+        }
+        if (d.period !== undefined) {
+          orbitalPeriod = d.period; // Seconds
+          console.log('[FDO] period received:', d.period, 'seconds');
+        }
+        
+        // Capture debug fields for validation
+        if (d.debug_TimeSincePeriapsisDays !== undefined) {
+          debug.timeSincePeriapsisDays = d.debug_TimeSincePeriapsisDays;
+        }
+        if (d.debug_TimeSincePeriapsisSeconds !== undefined) {
+          debug.timeSincePeriapsisSeconds = d.debug_TimeSincePeriapsisSeconds;
+        }
+        if (d.debug_NextPeriapsisTime !== undefined) {
+          debug.nextPeriapsisTime = d.debug_NextPeriapsisTime;
+        }
+        if (d.debug_NextApoapsisTime !== undefined) {
+          debug.nextApoapsisTime = d.debug_NextApoapsisTime;
+        }
+        if (d.debug_NextPatchEventTime !== undefined) {
+          debug.nextPatchEventTime = d.debug_NextPatchEventTime;
+        }
+        break;
+      case 'ksa/bridge/status':
+        st.mqttStatus = d.connected ? 'NOM' : 'HOLD';
+        break;
+    }
+  } catch (err) {
+    console.error('[FDO] Message parse error:', err, 'on topic:', topic);
+  }
+});
+
+// ── ORBITAL MECHANICS ────────────────────────────────────────────────────────
+
+function orbPeriod(alt) {
+  const r = (RE + alt) * 1000;
+  return 2 * Math.PI * Math.sqrt(Math.pow(r, 3) / MU); // seconds
+}
+
+function orbitTimings(alt) {
+  const T    = orbPeriod(alt) * 1000; // ms
+  const inOrb = (Date.now() - orbitStart) % T;
+  const frac  = inOrb / T;
+  const tta   = frac < 0.5 ? (0.5 - frac) * T : (1.5 - frac) * T;
+  const ttp   = (1 - frac) * T;
+  return { tta, ttp, period: T / 60000 };
+}
+
+function groundTrack(alt) {
+  const T            = orbPeriod(alt);
+  const circumference = 2 * Math.PI * (RE + alt);
+  const elapsed      = (Date.now() - orbitStart) / 1000;
+  return (elapsed / T) * circumference % circumference;
+}
+
+function insDeltaV(v, alt) {
+  const r  = (RE + alt) * 1000;
+  const vc = Math.sqrt(MU / r);
+  return v - vc;
+}
+
+function flightPathAngle(apo, per, alt) {
+  const e = Math.max(0, (apo - per) / (apo + per + 2 * RE));
+  if (e < 1e-6) return 0;
+  const a      = (apo + per) / 2 + RE;
+  const r      = RE + alt;
+  const cos_nu = Math.max(-1, Math.min(1, (a * (1 - e * e) / r - 1) / e));
+  return Math.asin(e * Math.sin(Math.acos(cos_nu))) * 180 / Math.PI;
+}
+
+// ── FORMATTING HELPERS ───────────────────────────────────────────────────────
+
+function formatGET() {
+  const ms  = Date.now() - getStart;
+  const s   = Math.floor(ms / 1000);
+  const h   = Math.floor(s / 3600);
+  const m   = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(3,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function formatHMS(ms) {
+  if (ms === null || ms === undefined || isNaN(ms)) return '---';
+  if (ms < 0) ms = 0;
+  const s   = Math.floor(ms / 1000);
+  const h   = Math.floor(s / 3600);
+  const m   = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+const pL = (s, n) => String(s).padStart(n);
+const pR = (s, n) => String(s).padEnd(n);
+
+// Format number or return placeholder
+const fmt = (val, decimals = 1) => {
+  if (val === null || val === undefined || isNaN(val)) return '---';
+  return Number(val).toFixed(decimals);
+};
+
+// HTML span helpers — keep these thin, no inline styles
+const B    = s => `<span class="b">${s}</span>`;
+const D    = s => `<span class="d">${s}</span>`;
+const LIVE = s => `<span class="live">${s}</span>`;
+const NOM  = () => `<span class="nom">● NOM </span>`;
+const CAUT = () => `<span class="caut">● CAUT</span>`;
+const ALRM = () => `<span class="alrm">▲ ALRM</span>`;
+
+const SEP  = D('─'.repeat(60));
+const SEPE = D('═'.repeat(60));
+
+// Parameter row: label | actual value | units | Δ plan | status
+function row(label, val, units, delta, statusFn) {
+  const l = pR(label, 22);
+  const v = pL(val, 10);
+  const u = pR(units, 7);
+  const d = delta === null
+    ? pL('─', 8)
+    : pL((delta >= 0 ? '+' : '') + Number(delta).toFixed(1), 8);
+  return `  ${l}${v}  ${u} ${D(d)}  ${statusFn()}\n`;
+}
+
+// Timing row: label | HH:MM:SS | status (no delta)
+function rowHMS(label, hms, statusFn) {
+  return `  ${pR(label,22)}${pL(hms,10)}  ${'HH:MM:SS'.padEnd(7)} ${D(pL('─',8))}  ${statusFn()}\n`;
+}
+
+// ── DISPLAY UPDATE ───────────────────────────────────────────────────────────
+
+let tick = 0;
+
+function update() {
+  tick++;
+
+  const get = formatGET();
+  
+  // Use REAL orbital timing data from KSA instead of fake calculations
+  const tta = timeToApo;  // Already in milliseconds
+  const ttp = timeToPer;  // Already in milliseconds
+  const period = orbitalPeriod !== null ? orbitalPeriod / 60 : null; // Convert seconds to minutes
+  const gt = st.altitude !== null ? groundTrack(st.altitude) : null;
+  const dv = (st.velocity !== null && st.altitude !== null) ? insDeltaV(st.velocity, st.altitude) : null;
+  const angle = (st.apo !== null && st.per !== null && st.altitude !== null) ? flightPathAngle(st.apo, st.per, st.altitude) : null;
+
+  // Deltas from plan (handle null)
+  const dVel = st.velocity !== null ? st.velocity - plan.velocity : null;
+  const dAlt = st.altitude !== null ? st.altitude - plan.altitude : null;
+  const dApo = st.apo !== null ? st.apo - plan.apo : null;
+  const dPer = st.per !== null ? st.per - plan.per : null;
+
+  // Status thresholds (safe null handling)
+  // Show --- when no data, NOM only when we have valid data within limits
+  const HOLD = () => `<span class="d">---</span>`;
+  const velSt  = st.velocity === null ? HOLD : (dVel !== null && Math.abs(dVel) > 10 ? CAUT : NOM);
+  const altSt  = st.altitude === null ? HOLD : (dAlt !== null && Math.abs(dAlt) > 2  ? CAUT : NOM);
+  const apoSt  = st.apo === null ? HOLD : (dApo !== null && Math.abs(dApo) > 5  ? CAUT : NOM);
+  const perSt  = st.per === null ? HOLD : (dPer !== null && Math.abs(dPer) > 5  ? CAUT : NOM);
+  const dvSt   = dv === null ? HOLD : (Math.abs(dv) > 30 ? ALRM : (Math.abs(dv) > 10 ? CAUT : NOM));
+  const fpaSt  = angle === null ? HOLD : (Math.abs(angle) > 0.5 ? CAUT : NOM);
+
+  let o = '';
+
+  // ── HEADER ────────────────────────────────────────────────────────────────
+  o += D('MSC HOUSTON  MOCR-2') + D('                       STATION: ') + B('FDO') + '\n';
+  o += SEPE + '\n';
+  o += `  ${D('VEH')} ${B(pR(st.vehicle,15))} ${D('GET')} ${B(get)}  `;
+  o += `${D('PHASE:')} ${B(st.phase)}  ${LIVE('[' + st.mqttStatus + ']')}\n`;
+  o += `  ${D('BODY:')} ${B(st.parentBody)}\n`;
+  o += SEP + '\n\n';
+
+  // ── ABORT AUTHORITY PANEL ─────────────────────────────────────────────────
+  // In the real MOCR this was a physically separate panel with dedicated
+  // toggle switches. FDO and FLIGHT were the only stations that could
+  // call for a launch abort.
+  o += D('  ┌─ ABORT AUTHORITY ─────────────────────────────────┐\n');
+  const authStr = st.abortArmed
+    ? `<span class="armd">  ▲ ARMED  </span>`
+    : `<span class="safe">  ● SAFE   </span>`;
+  o += `  │ TOGGLE: ${authStr}  MODE: ${B(pR('AOA', 20))} │\n`;
+  o += D('  └───────────────────────────────────────────────────┘\n\n');
+
+  // ── TRAJECTORY STATE ──────────────────────────────────────────────────────
+  o += `  ${D(pR('PARAMETER', 22))}${D(pL('ACTUAL', 10))}  `;
+  o += `${D(pR('UNITS', 7))} ${D(pL('Δ PLAN', 8))}  ${D('STATUS')}\n`;
+  o += SEP + '\n';
+  o += row('VELOCITY',       fmt(st.velocity, 1), 'M/SEC', dVel,  velSt);
+  o += row('ALT MSL',        fmt(st.altitude, 1), 'KM',    dAlt,  altSt);
+  o += row('FLT PATH ANGLE', fmt(angle, 3),       'DEG',   null,  fpaSt);
+  o += row('INS DELTA-V',    fmt(dv, 1),          'M/SEC', null,  dvSt);
+  o += row('GROUND TRACK',   fmt(gt, 1),          'KM',    null,  gt === null ? HOLD : NOM);
+  o += '\n';
+
+  // ── ORBITAL ELEMENTS ──────────────────────────────────────────────────────
+  o += D('  ORBITAL ELEMENTS\n') + SEP + '\n';
+  o += row('APOAPSIS',     fmt(st.apo, 1),   'KM',  dApo, apoSt);
+  o += row('PERIAPSIS',    fmt(st.per, 1),   'KM',  dPer, perSt);
+  o += row('ECCENTRICITY', fmt(st.ecc, 6),   '',    null, st.ecc === null ? HOLD : NOM);
+  o += row('INCLINATION',  fmt(st.inc, 2),   'DEG', null, st.inc === null ? HOLD : NOM);
+  o += row('PERIOD',       fmt(period, 2),   'MIN', null, period === null ? HOLD : NOM);
+  o += '\n';
+
+  // ── ORBITAL TIMING ────────────────────────────────────────────────────────
+  o += D('  ORBITAL TIMING\n') + SEP + '\n';
+  o += rowHMS('TIME TO APOAPSIS',  formatHMS(tta), tta === null ? HOLD : NOM);
+  o += rowHMS('TIME TO PERIAPSIS', formatHMS(ttp), ttp === null ? HOLD : NOM);
+  o += '\n';
+
+  // ── DEBUG DATA (TimeSincePeriapsis Validation) ───────────────────────────
+  o += D('  DEBUG: ORBITAL TIMING VALIDATION\n') + SEP + '\n';
+  o += `  ${pR('TSP.Days', 22)}${pL(debug.timeSincePeriapsisDays !== null ? debug.timeSincePeriapsisDays.toFixed(10) : '---', 20)}\n`;
+  o += `  ${pR('TSP.Seconds', 22)}${pL(debug.timeSincePeriapsisSeconds !== null ? debug.timeSincePeriapsisSeconds.toFixed(2) : '---', 20)}\n`;
+  o += `  ${pR('NextPeriapsisTime', 22)}${pL(debug.nextPeriapsisTime !== null ? debug.nextPeriapsisTime : '---', 20)}\n`;
+  o += `  ${pR('NextApoapsisTime', 22)}${pL(debug.nextApoapsisTime !== null ? debug.nextApoapsisTime : '---', 20)}\n`;
+  o += `  ${pR('NextPatchEventTime', 22)}${pL(debug.nextPatchEventTime !== null ? debug.nextPatchEventTime : '---', 20)}\n`;
+  o += '\n';
+
+  // ── FDO EVENT LOG ─────────────────────────────────────────────────────────
+  o += D('  FDO EVENT LOG\n') + SEP + '\n';
+  evlog.slice(-4).forEach(([t, m]) => {
+    o += `  ${D(t + '  ')}${m}\n`;
+  });
+
+  o += '\n  ' + D('> ');
+  if (tick % 2 === 0) o += B('█');
+
+  document.getElementById('display').innerHTML = o;
+}
+
+setInterval(update, 500);
+update();
+</script>
+
+
+
+</body></html>
