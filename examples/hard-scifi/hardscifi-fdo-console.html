@@ -344,19 +344,25 @@ let cameraInitialized = false; // will reposition once we get telemetry
 let trackShip = false; // toggle: keep camera centered on ship
 
 function updateCamera() {
-  const cx = camDist * Math.sin(camTheta) * Math.cos(camPhi);
-  const cy = camDist * Math.sin(camPhi);
-  const cz = camDist * Math.cos(camTheta) * Math.cos(camPhi);
+  // Spherical offset from the look-at target
+  const ox = camDist * Math.sin(camTheta) * Math.cos(camPhi);
+  const oy = camDist * Math.sin(camPhi);
+  const oz = camDist * Math.cos(camTheta) * Math.cos(camPhi);
 
   if (trackShip && state.posX != null) {
-    // Offset camera relative to ship position
+    // Ship position in Three.js coords
     const sx = state.posX / 1000;
     const sy = state.posZ / 1000;
     const sz = -state.posY / 1000;
-    camera.position.set(sx + cx * 0.3, sy + cy * 0.3, sz + cz * 0.3);
-    camera.lookAt(sx, sy, sz);
+    // Camera orbits around midpoint between ship and planet center,
+    // keeping both in view while tracking the ship's motion
+    const lookX = sx * 0.5;
+    const lookY = sy * 0.5;
+    const lookZ = sz * 0.5;
+    camera.position.set(lookX + ox, lookY + oy, lookZ + oz);
+    camera.lookAt(lookX, lookY, lookZ);
   } else {
-    camera.position.set(cx, cy, cz);
+    camera.position.set(ox, oy, oz);
     camera.lookAt(0, 0, 0);
   }
 }
