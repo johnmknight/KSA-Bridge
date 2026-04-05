@@ -276,6 +276,22 @@ Another application is using port 1884. Either:
 3. Try reconnecting: in-game, press **Ctrl+B** and click **[Reload Config]**
 4. Check firewall: Windows Defender may block Mosquitto on first run
 
+### "Mod can't connect: NotAuthorized error"
+**Error in game logs:** `[KSA-Bridge] Connect failed: NotAuthorized`
+
+This happens when Mosquitto requires authentication. The KSA-Bridge repository includes a config that enables anonymous access (safe for local dev). Verify:
+
+1. Check `config/mosquitto.conf` contains:
+   ```
+   listener 1884
+   protocol mqtt
+   allow_anonymous true
+   ```
+
+2. If not, add those lines and restart Mosquitto using `scripts/restart-mosquitto.bat`
+
+3. For production/networked setups, see "Using Mosquitto with Authentication" in the docs (future)
+
 ### "Python webserver won't start"
 ```bash
 # Port 8088 may be in use. Try:
