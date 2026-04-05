@@ -36,60 +36,66 @@
     /* Overlay panels float above the 3D scene */
     .overlay { position:fixed; z-index:10; pointer-events:none; }
     .panel { pointer-events:auto; background:var(--bg-panel); border:1px solid var(--border); border-radius:4px; padding:10px 12px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-    .panel-title { font-size:9px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-secondary); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-    .panel-title::before { content:''; width:3px; height:9px; background:var(--accent); border-radius:1px; }
+    .panel-title { font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+    .panel-title::before { content:''; width:3px; height:11px; background:var(--accent); border-radius:1px; }
 
     /* Header bar */
     .header { position:fixed; top:0; left:0; right:0; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:8px 20px; background:rgba(6,8,16,0.9); border-bottom:1px solid var(--border); backdrop-filter:blur(12px); }
     .header-left { display:flex; align-items:center; gap:20px; }
-    .station-id { font-size:18px; font-weight:700; color:var(--accent); letter-spacing:0.1em; }
-    .station-role { font-size:9px; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase; }
+    .station-id { font-size:28px; font-weight:700; color:var(--accent); letter-spacing:0.12em; }
+    .station-role { font-size:13px; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase; }
     .header-meta { display:flex; gap:20px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .meta-item { display:flex; flex-direction:column; align-items:flex-end; }
-    .meta-label { font-size:8px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; }
-    .meta-value { font-size:12px; font-weight:600; color:var(--text-bright); white-space:nowrap; }
-    .status-badge { display:inline-flex; align-items:center; gap:4px; font-size:9px; font-weight:600; letter-spacing:0.08em; padding:2px 7px; border-radius:3px; }
+    .meta-label { font-size:10px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; }
+    .meta-value { font-size:15px; font-weight:600; color:var(--text-bright); white-space:nowrap; }
+    .status-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; letter-spacing:0.08em; padding:3px 9px; border-radius:3px; }
     .status-badge.nom { background:var(--nominal-dim); color:var(--nominal); }
     .status-badge.hold { background:rgba(26,26,26,0.8); color:var(--text-dim); }
     .status-badge.caut { background:rgba(241,196,15,0.15); color:var(--caution); }
-    .status-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .status-badge.nom .status-dot { animation:pulse 2s ease infinite; }
     /* Left panels */
-    .left-panels { position:fixed; top:52px; left:12px; bottom:40px; width:280px; z-index:10; display:flex; flex-direction:column; gap:8px; overflow-y:auto; pointer-events:none; }
+    .left-panels { position:fixed; top:60px; left:12px; bottom:44px; width:300px; z-index:10; display:flex; flex-direction:column; gap:8px; overflow-y:auto; pointer-events:none; }
     .left-panels .panel { pointer-events:auto; }
 
     /* Right panels */
-    .right-panels { position:fixed; top:52px; right:12px; bottom:40px; width:260px; z-index:10; display:flex; flex-direction:column; gap:8px; overflow-y:auto; pointer-events:none; }
+    .right-panels { position:fixed; top:60px; right:12px; bottom:44px; width:290px; z-index:10; display:flex; flex-direction:column; gap:8px; overflow-y:auto; pointer-events:none; }
     .right-panels .panel { pointer-events:auto; }
 
     /* Data rows */
-    .data-row { display:flex; justify-content:space-between; align-items:baseline; padding:2px 0; border-bottom:1px solid rgba(30,36,48,0.5); gap:8px; }
+    .data-row { display:flex; justify-content:space-between; align-items:baseline; padding:2px 0; border-bottom:1px solid rgba(30,36,48,0.5); gap:6px; }
     .data-row:last-child { border-bottom:none; }
-    .data-label { font-size:9px; color:var(--text-secondary); letter-spacing:0.05em; text-transform:uppercase; white-space:nowrap; }
-    .data-value { font-size:12px; font-weight:600; color:var(--text-bright); font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .data-unit { font-size:8px; color:var(--text-dim); margin-left:3px; }
+    .data-label { font-size:12px; color:var(--text-secondary); letter-spacing:0.05em; text-transform:uppercase; white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .data-value { font-size:15px; font-weight:600; color:var(--text-bright); font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .data-unit { font-size:11px; color:var(--text-secondary); margin-left:2px; }
+    .data-row > span:last-child { white-space:nowrap; flex-shrink:0; text-align:right; }
+
+    /* Time-critical data highlights */
+    .data-row.urgent .data-value { color:var(--caution); font-size:17px; }
+    .data-row.alert .data-value { color:var(--alarm); font-size:17px; font-weight:700; }
+    .data-row.active .data-value { color:var(--nominal); font-weight:700; }
 
     /* Sparklines */
     .sparkline-row { display:flex; align-items:center; gap:6px; padding:2px 0; }
-    .sparkline-label { font-size:9px; color:var(--text-secondary); width:55px; flex-shrink:0; }
-    .sparkline-canvas { flex:1; height:20px; }
-    .sparkline-value { font-size:10px; font-weight:600; color:var(--text-bright); width:65px; text-align:right; font-variant-numeric:tabular-nums; }
+    .sparkline-label { font-size:11px; color:var(--text-secondary); width:65px; flex-shrink:0; }
+    .sparkline-canvas { flex:1; height:24px; }
+    .sparkline-value { font-size:13px; font-weight:600; color:var(--text-bright); width:70px; text-align:right; font-variant-numeric:tabular-nums; }
 
     /* Abort panel */
     .abort-bar { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border:1px solid var(--border); border-radius:4px; background:var(--bg-panel); }
     .abort-bar.armed { border-color:var(--alarm); background:rgba(231,76,60,0.1); }
 
     /* Event log */
-    .event-log { font-size:9px; line-height:1.5; max-height:120px; overflow-y:auto; }
+    .event-log { font-size:11px; line-height:1.6; max-height:120px; overflow-y:auto; }
     .entry { display:flex; gap:8px; }
     .entry-time { color:var(--text-dim); flex-shrink:0; }
     .entry-msg { color:var(--text-secondary); }
 
     /* Footer */
-    .footer { position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:4px 20px; font-size:8px; color:var(--text-dim); background:rgba(6,8,16,0.9); border-top:1px solid var(--border); }
+    .footer { position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:6px 20px; font-size:10px; color:var(--text-dim); background:rgba(6,8,16,0.9); border-top:1px solid var(--border); }
     .footer-leds { display:flex; gap:5px; }
-    .led { width:5px; height:5px; border-radius:50%; background:#0a1a0a; border:1px solid #1a2a1a; }
+    .led { width:7px; height:7px; border-radius:50%; background:#0a1a0a; border:1px solid #1a2a1a; }
     .led.on { background:var(--nominal); box-shadow:0 0 4px var(--nominal); border-color:var(--nominal); }
 
     ::-webkit-scrollbar { width:3px; }
@@ -167,10 +173,14 @@
 <div class="header">
   <div class="header-left">
     <div><div class="station-id">FDO</div><div class="station-role">Flight Dynamics Officer</div></div>
+    <div style="margin-left:12px;padding-left:20px;border-left:1px solid var(--border)">
+      <div style="font-size:9px;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase">ORBITING</div>
+      <div id="hdr-body-large" style="font-size:22px;font-weight:700;color:var(--text-bright);letter-spacing:0.08em;text-transform:uppercase">---</div>
+    </div>
   </div>
   <div class="header-meta">
     <div class="meta-item"><span class="meta-label">Vehicle</span><span class="meta-value" id="hdr-vehicle">---</span></div>
-    <div class="meta-item"><span class="meta-label">Body</span><span class="meta-value" id="hdr-body">---</span></div>
+    <div class="meta-item" style="display:none"><span class="meta-label">Body</span><span class="meta-value" id="hdr-body">---</span></div>
     <div class="meta-item"><span class="meta-label">Phase</span><span class="meta-value" id="hdr-phase">STANDBY</span></div>
     <div class="meta-item"><span class="meta-label">GET</span><span class="meta-value" id="hdr-get">000:00:00</span></div>
     <div id="hdr-mqtt" class="status-badge hold"><span class="status-dot"></span>HOLD</div>
@@ -179,8 +189,8 @@
 <!-- Left Panels -->
 <div class="left-panels">
   <div class="abort-bar" id="abort-panel">
-    <div><div style="font-size:9px;color:var(--text-secondary);letter-spacing:0.1em">ABORT AUTHORITY</div><div style="font-size:11px;font-weight:700;color:var(--nominal)" id="abort-state">SAFE</div></div>
-    <div style="text-align:right"><div style="font-size:9px;color:var(--text-secondary)">MODE</div><div style="font-size:11px;font-weight:600;color:var(--text-bright)" id="abort-mode">---</div></div>
+    <div><div style="font-size:11px;color:var(--text-secondary);letter-spacing:0.1em">ABORT AUTHORITY</div><div style="font-size:14px;font-weight:700;color:var(--nominal)" id="abort-state">SAFE</div></div>
+    <div style="text-align:right"><div style="font-size:11px;color:var(--text-secondary)">MODE</div><div style="font-size:14px;font-weight:600;color:var(--text-bright)" id="abort-mode">---</div></div>
   </div>
 
   <div class="panel">
@@ -226,7 +236,7 @@
 
   <div class="panel">
     <div class="panel-title">State Vectors (CCI)</div>
-    <div style="display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:10px">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px">
       <span style="color:var(--text-secondary)">Pos X</span><span style="text-align:right;color:var(--text-bright);font-variant-numeric:tabular-nums" id="sv-px">---</span>
       <span style="color:var(--text-secondary)">Pos Y</span><span style="text-align:right;color:var(--text-bright);font-variant-numeric:tabular-nums" id="sv-py">---</span>
       <span style="color:var(--text-secondary)">Pos Z</span><span style="text-align:right;color:var(--text-bright);font-variant-numeric:tabular-nums" id="sv-pz">---</span>
@@ -297,6 +307,10 @@ const darkScene = {
   eq: 0x3366cc, eqOp: 0.45,
   lon: 0x2255aa, lonOp: 0.18,
   coast: 0x4a9eff, coastOp: 0.45,
+  marsCertain: 0xD4883A, marsCertainOp: 0.55,
+  marsApprox: 0x8B5E2B, marsApproxOp: 0.35,
+  marsInternal: 0x5A8A7A, marsInternalOp: 0.40,
+  marsBorder: 0xFFAA44, marsBorderOp: 0.70,
   orbit: 0x4a9eff, orbitOp: 0.6,
   ship: 0x4a9eff, apo: 0xe67e22, per: 0x2ecc71,
   starOp: 0.7
@@ -309,6 +323,10 @@ const lightScene = {
   eq: 0x4070A0, eqOp: 0.35,
   lon: 0x6080A0, lonOp: 0.15,
   coast: 0x0077BB, coastOp: 0.55,
+  marsCertain: 0xB06820, marsCertainOp: 0.60,
+  marsApprox: 0x7A4E1B, marsApproxOp: 0.40,
+  marsInternal: 0x4A7A6A, marsInternalOp: 0.45,
+  marsBorder: 0xDD8822, marsBorderOp: 0.75,
   orbit: 0x0077BB, orbitOp: 0.7,
   ship: 0x0077BB, apo: 0xCC4400, per: 0x1A7A3A,
   starOp: 0.15
@@ -503,20 +521,45 @@ const atmoVert = `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
   }`;
 const atmoFrag = `
+  uniform vec3 uAtmoInner;
+  uniform vec3 uAtmoOuter;
   varying vec3 vNormal;
   varying vec3 vPosition;
   void main() {
     vec3 viewDir = normalize(-vPosition);
     float rim = 1.0 - dot(vNormal, viewDir);
     float intensity = pow(rim, 3.5) * 1.4;
-    vec3 col = mix(vec3(0.2,0.5,1.0), vec3(0.1,0.8,1.0), rim);
+    vec3 col = mix(uAtmoInner, uAtmoOuter, rim);
     gl_FragColor = vec4(col, intensity * 0.5);
   }`;
 const atmoMesh = new THREE.Mesh(
   new THREE.SphereGeometry(GLOBE_R + 100, 64, 64),
-  new THREE.ShaderMaterial({ vertexShader:atmoVert, fragmentShader:atmoFrag, transparent:true, side:THREE.BackSide, depthWrite:false, blending:THREE.AdditiveBlending })
+  new THREE.ShaderMaterial({
+    vertexShader:atmoVert, fragmentShader:atmoFrag, transparent:true,
+    side:THREE.BackSide, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms: {
+      uAtmoInner: { value: new THREE.Vector3(0.2, 0.5, 1.0) },
+      uAtmoOuter: { value: new THREE.Vector3(0.1, 0.8, 1.0) }
+    }
+  })
 );
 earthGroup.add(atmoMesh);
+
+// Per-body atmosphere colors [inner, outer] as RGB 0-1
+const bodyAtmoColors = {
+  'Earth':   { inner: [0.2, 0.5, 1.0],  outer: [0.1, 0.8, 1.0]  },
+  'Mars':    { inner: [0.8, 0.35, 0.1],  outer: [1.0, 0.5, 0.15] },
+  'Moon':    { inner: [0.5, 0.5, 0.55],  outer: [0.4, 0.4, 0.45] },
+  'Mercury': { inner: [0.5, 0.45, 0.4],  outer: [0.45, 0.4, 0.35] },
+  'Venus':   { inner: [0.9, 0.7, 0.3],   outer: [1.0, 0.85, 0.4] },
+  'default': { inner: [0.3, 0.5, 0.8],   outer: [0.2, 0.6, 0.9]  }
+};
+function setAtmosphereForBody(bodyName) {
+  const colors = bodyAtmoColors[bodyName] || bodyAtmoColors['default'];
+  const mat = atmoMesh.material;
+  mat.uniforms.uAtmoInner.value.set(colors.inner[0], colors.inner[1], colors.inner[2]);
+  mat.uniforms.uAtmoOuter.value.set(colors.outer[0], colors.outer[1], colors.outer[2]);
+}
 
 // ── SURFACE FEATURE DATA ────────────────────────────────────
 // Dynamic loading of surface outlines per body (coastlines for Earth, mare/craters for others)
@@ -527,6 +570,13 @@ const coastlineMat = new THREE.LineBasicMaterial({
 const craterMat = new THREE.LineBasicMaterial({
   color: currentThemeColors.coast, transparent: true, opacity: currentThemeColors.coastOp * 0.6, depthWrite: false
 });
+// Mars geologic contact materials (by ConType)
+const marsContactMats = {
+  Certain:  new THREE.LineBasicMaterial({ color: currentThemeColors.marsCertain,  transparent: true, opacity: currentThemeColors.marsCertainOp,  depthWrite: false }),
+  Approx:   new THREE.LineBasicMaterial({ color: currentThemeColors.marsApprox,   transparent: true, opacity: currentThemeColors.marsApproxOp,   depthWrite: false }),
+  Internal: new THREE.LineBasicMaterial({ color: currentThemeColors.marsInternal, transparent: true, opacity: currentThemeColors.marsInternalOp, depthWrite: false }),
+  Border:   new THREE.LineBasicMaterial({ color: currentThemeColors.marsBorder,   transparent: true, opacity: currentThemeColors.marsBorderOp,   depthWrite: false })
+};
 
 function latLonToVec3(lat, lon, r) {
   const phi = (90 - lat) * Math.PI / 180;
@@ -592,7 +642,7 @@ const bodyDataConfig = {
     labels:  { url: 'data/moon_labels.json', type: 'labels' }
   },
   'Mars': {
-    craters: { url: 'data/mars_craters.topojson', type: 'topojson' },
+    outlines: { url: 'data/mars_contacts.geojson', type: 'geojson' },
     labels:  { url: 'data/mars_labels.json', type: 'labels' }
   },
   'Mercury': {
@@ -616,17 +666,19 @@ function ensureTopojsonClient() {
       return;
     }
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js';
     script.onload = () => { topojsonLoaded = true; resolve(); };
+    script.onerror = () => { console.warn('[FDO] Failed to load topojson client'); resolve(); };
     document.head.appendChild(script);
   });
 }
 
 async function loadBodyData(bodyName) {
-  if (bodyName === currentBodyName) return;
+  if (bodyName === currentBodyName && surfaceFeatures.length > 0) return;
   currentBodyName = bodyName;
   clearSurfaceFeatures();
   logEvent('BODY: ' + bodyName);
+  setAtmosphereForBody(bodyName);
 
   const config = bodyDataConfig[bodyName];
   if (!config) {
@@ -634,7 +686,20 @@ async function loadBodyData(bodyName) {
     return;
   }
 
-  await ensureTopojsonClient();
+  try {
+    await ensureTopojsonClient();
+    if (typeof topojson === 'undefined') {
+      console.warn('[FDO] topojson client not available, cannot render surface data');
+      currentBodyName = null; // allow retry
+      return;
+    }
+  } catch(e) {
+    console.warn('[FDO] Failed to load topojson client', e);
+    currentBodyName = null; // allow retry
+    return;
+  }
+
+  let loaded = false;
 
   // Load outline data (coastlines/mare boundaries)
   if (config.outlines) {
@@ -645,8 +710,27 @@ async function loadBodyData(bodyName) {
         const objectKey = config.outlines.objectKey || Object.keys(data.objects)[0];
         const geojson = topojson.feature(data, data.objects[objectKey]);
         renderFeatures(geojson, coastlineMat, GLOBE_R * 1.001);
+        loaded = true;
       } else {
-        renderFeatures(data, coastlineMat, GLOBE_R * 1.001);
+        // Check if data has ConType properties (Mars geologic contacts)
+        const hasConType = data.features && data.features.some(f => f.properties && f.properties.ConType);
+        if (hasConType) {
+          // Render each ConType with its own material
+          Object.keys(marsContactMats).forEach(conType => {
+            const subset = { type: 'FeatureCollection', features: data.features.filter(f => f.properties && f.properties.ConType === conType) };
+            if (subset.features.length > 0) {
+              renderFeatures(subset, marsContactMats[conType], GLOBE_R * 1.001);
+            }
+          });
+          // Any features with unknown ConType get default coastline material
+          const unknown = { type: 'FeatureCollection', features: data.features.filter(f => !f.properties || !f.properties.ConType || !marsContactMats[f.properties.ConType]) };
+          if (unknown.features.length > 0) {
+            renderFeatures(unknown, coastlineMat, GLOBE_R * 1.001);
+          }
+        } else {
+          renderFeatures(data, coastlineMat, GLOBE_R * 1.001);
+        }
+        loaded = true;
       }
     } catch(e) { console.warn('[FDO] Failed to load outlines for', bodyName, e); }
   }
@@ -660,8 +744,10 @@ async function loadBodyData(bodyName) {
         const objectKey = Object.keys(data.objects)[0];
         const geojson = topojson.feature(data, data.objects[objectKey]);
         renderFeatures(geojson, craterMat, GLOBE_R * 1.001);
+        loaded = true;
       } else {
         renderFeatures(data, craterMat, GLOBE_R * 1.001);
+        loaded = true;
       }
     } catch(e) { console.warn('[FDO] Failed to load craters for', bodyName, e); }
   }
@@ -671,10 +757,12 @@ async function loadBodyData(bodyName) {
     try {
       const resp = await fetch(config.labels.url);
       const labels = await resp.json();
-      // Future: render label sprites. For now, store for later use.
       state.bodyLabels = labels;
     } catch(e) { console.warn('[FDO] Failed to load labels for', bodyName, e); }
   }
+
+  // If nothing loaded, allow retry on next message
+  if (!loaded) currentBodyName = null;
 }
 
 // Default: load Earth data on startup
@@ -880,9 +968,10 @@ client.on('message', (topic, payload) => {
         if (d.rotationQuatZ != null) state.bodyRotQz = d.rotationQuatZ;
         if (d.rotationQuatW != null) state.bodyRotQw = d.rotationQuatW;
         if (d.axialTilt != null) state.axialTilt = d.axialTilt;
-        if (d.bodyName != null) {
-          state.bodyName = d.bodyName;
-          loadBodyData(d.bodyName);
+        const bName = d.bodyName || d.parentId;
+        if (bName != null) {
+          state.bodyName = bName;
+          loadBodyData(bName);
         }
         if (d.meanRadius != null) state.bodyMeanRadius = d.meanRadius;
         break;
@@ -936,7 +1025,7 @@ function updateDOM() {
   const get = formatGET();
   document.getElementById('hdr-get').textContent = get;
   if (state.vehicleName) document.getElementById('hdr-vehicle').textContent = state.vehicleName;
-  if (state.parentBody) document.getElementById('hdr-body').textContent = state.parentBody;
+  if (state.parentBody) { document.getElementById('hdr-body').textContent = state.parentBody; document.getElementById('hdr-body-large').textContent = state.parentBody; }
   if (state.situation) document.getElementById('hdr-phase').textContent = state.situation.toUpperCase();
 
   // Trajectory
@@ -958,14 +1047,33 @@ function updateDOM() {
   sv('d-lan', state.lan != null ? (state.lan * RAD2DEG) : null, 2);
   sv('d-aop', state.aop != null ? (state.aop * RAD2DEG) : null, 2);
 
-  // Timing
-  document.getElementById('d-tta').textContent = formatSeconds(state.timeToApo);
-  document.getElementById('d-ttp').textContent = formatSeconds(state.timeToPer);
+  // Timing — highlight based on urgency
+  const ttaEl = document.getElementById('d-tta');
+  const ttpEl = document.getElementById('d-ttp');
+  ttaEl.textContent = formatSeconds(state.timeToApo);
+  ttpEl.textContent = formatSeconds(state.timeToPer);
   sv('d-orbtype', state.orbitType);
 
-  // Maneuver
+  // Apply urgency classes to timing rows
+  const setUrgency = (el, seconds) => {
+    const row = el.closest('.data-row');
+    if (!row) return;
+    row.classList.remove('urgent', 'alert');
+    if (seconds != null && seconds < 30) row.classList.add('alert');
+    else if (seconds != null && seconds < 120) row.classList.add('urgent');
+  };
+  setUrgency(ttaEl, state.timeToApo);
+  setUrgency(ttpEl, state.timeToPer);
+
+  // Maneuver — highlight active burn
   sv('d-burns', state.burnCount, 0);
-  sv('d-burning', state.hasActiveBurns != null ? (state.hasActiveBurns ? 'YES' : 'No') : null);
+  const burningVal = state.hasActiveBurns != null ? (state.hasActiveBurns ? 'YES' : 'No') : null;
+  sv('d-burning', burningVal);
+  const burningEl = document.getElementById('d-burning');
+  if (burningEl) {
+    const row = burningEl.closest('.data-row');
+    if (row) { row.classList.toggle('active', state.hasActiveBurns === true); row.classList.toggle('alert', false); }
+  }
   sv('d-encounter', state.hasEncounter != null ? (state.hasEncounter ? 'YES' : 'None') : null);
   sv('d-flightplan', state.flightPlanComplete != null ? (state.flightPlanComplete ? 'Complete' : 'Active') : null);
 
@@ -1044,6 +1152,11 @@ function applyThemeToScene(t) {
   coastlineMat.opacity = t.coastOp;
   craterMat.color.setHex(t.coast);
   craterMat.opacity = t.coastOp * 0.6;
+  // Mars contact materials
+  marsContactMats.Certain.color.setHex(t.marsCertain);   marsContactMats.Certain.opacity = t.marsCertainOp;
+  marsContactMats.Approx.color.setHex(t.marsApprox);     marsContactMats.Approx.opacity = t.marsApproxOp;
+  marsContactMats.Internal.color.setHex(t.marsInternal);  marsContactMats.Internal.opacity = t.marsInternalOp;
+  marsContactMats.Border.color.setHex(t.marsBorder);     marsContactMats.Border.opacity = t.marsBorderOp;
   // Markers
   if (shipMarker) shipMarker.material.color.setHex(t.ship);
   if (apoMarker) apoMarker.material.color.setHex(t.apo);

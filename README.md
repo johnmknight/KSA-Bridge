@@ -23,6 +23,8 @@ A Three.js holographic 3D globe with live orbit rendering, continent outlines, a
 - Ship tracking camera mode
 - Dark (Ship Bridge) and Light (HABitat Research) themes
 - Trajectory history sparklines, orbital timing, maneuver plan panels
+- Per-body atmosphere glow (blue for Earth, amber for Mars, grey for Moon, etc.)
+- USGS SIM 3292 Mars geologic boundary data, color-coded by contact type (Certain, Approximate, Internal, Border)
 
 ### Apollo Mission Control — FDO Console
 `examples/apollo-mission-control/apollo-fdo-console.html`
@@ -33,14 +35,16 @@ A phosphor-green terminal aesthetic inspired by 1960s NASA mission control.
 
 ```
 KSA Game ←→ KSA-Bridge (C# mod) → MQTT Broker (Mosquitto) → Web Consoles
-                  ↓                      ↑
-             HTTP Server            Port 1884 (MQTT)
-          (port 8088, static)       Port 9001 (WebSocket)
+                                        └
+                                   Port 1884 (MQTT)
+                                   Port 9001 (WebSocket)
 ```
 
-The mod uses the StarMap 0.4.x API to read vehicle and orbit data, then publishes JSON payloads via MQTTnet. Web consoles connect over WebSocket (port 9001) using mqtt.js.
+The mod uses the StarMap 0.4.x API to read vehicle and orbit data, then publishes JSON payloads via MQTTnet. Web consoles connect to the broker over WebSocket (port 9001) using mqtt.js.
 
-An embedded HTTP file server (System.Net.HttpListener) serves the mission control console pages and data files from a `web/` directory next to the mod DLL. This eliminates CORS issues that block `file://` URLs from fetching data at runtime — essential for loading planet surface data, topojson files, and other assets without embedding them into the HTML.
+The mod itself does not open any ports — it only connects outbound to the MQTT broker. The ports in the diagram (1884 and 9001) are Mosquitto's listeners, configured in your `mosquitto.conf`.
+
+The sample consoles in `examples/` are standalone HTML files — serve them however you like (any local web server, open directly in a browser, host on a Raspberry Pi, etc.). The mod's only job is publishing telemetry over MQTT. What you do with that data on the receiving end is up to you.
 
 ## MQTT Topics
 
@@ -77,21 +81,48 @@ An embedded HTTP file server (System.Net.HttpListener) serves the mission contro
    dotnet build --configuration Release
    ```
 
-3. **Deploy** the built DLL to your KSA mods directory:
+3. **Deploy** the built DLL to your KSA mods directory (see [INSTALLATION.md](INSTALLATION.md) for platform-specific paths):
    ```
-   <KSA Install>/mods/KSA-Bridge/
-     KSA-Bridge.dll
-     mod.toml
-     web/                              ← console files served by embedded HTTP server
-       hard-scifi/
-         hardscifi-fdo-console-cdn.html
-       apollo-mission-control/
-         apollo-fdo-console.html
+   Windows:  Documents\My Games\Kitten Space Agency\mods\KSA-Bridge\
+   Linux:    ~/.local/share/Kitten Space Agency/mods/KSA-Bridge/
+   macOS:    ~/Library/Application Support/Kitten Space Agency/mods/KSA-Bridge/
+   ```
+   The directory needs `KSA-Bridge.dll` and `mod.toml`.
+
+4. **Launch KSA** — the mod auto-connects to the MQTT broker and starts publishing telemetry.
+
+5. **Open a console** — the CDN version (`examples/hard-scifi/hardscifi-fdo-console-cdn.html`) works by opening it directly in your browser with no web server needed. Other consoles that load local assets (topojson, surface data) need to be served over HTTP — use any static file server you like:
+
+   ```bash
+   # Python (built-in, no install needed)
+   cd examples
+   python -m http.server 8088
+
+   # Or Waitress, Nginx, Caddy, Live Server in VS Code — whatever you have
    ```
 
-4. **Launch KSA** — the mod auto-connects to the MQTT broker, starts publishing telemetry, and launches the HTTP server.
+   Then browse to `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
 
-5. **Open a console** — browse to `http://127.0.0.1:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
+## Surface Data
+
+The FDO console renders surface features on the 3D globe for spatial context. Data is loaded per-body from the `examples/hard-scifi/data/` directory:
+
+| Body | Data Source | Format |
+|------|-------------|--------|
+| Earth | Natural Earth 110m | TopoJSON (CDN) |
+| Moon | Mare boundaries, craters | TopoJSON |
+| Mars | USGS SIM 3292 Global Geologic Map | GeoJSON |
+| Mercury | Crater rings | TopoJSON |
+
+**Mars geologic contacts** are derived from the [USGS SIM 3292](https://pubs.usgs.gov/sim/3292/) Global Geologic Map of Mars (Tanaka et al., 2014). The source shapefile (`SIM3292_Global_Contacts.shp`, ~32 MB) uses the GCS Mars 2000 Sphere projection (geographic lat/lon on a Mars ellipsoid). To regenerate the simplified GeoJSON from the raw USGS data:
+
+```bash
+# Requires: pip install geopandas fiona shapely
+# Place USGS SIM3292 shapefiles in examples/hard-scifi/data/usgs_raw/
+python convert_mars.py
+```
+
+This reads the contacts shapefile, simplifies geometry (tolerance 1.0°), removes null geometries, and writes `examples/hard-scifi/data/mars_contacts.geojson` (~842 KB, 3708 features). Contact types are color-coded on the globe: Certain boundaries in amber, Approximate in dark rust, Internal in teal, and Border contacts in bright gold.
 
 ## Coordinate Systems
 
