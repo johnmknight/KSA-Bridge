@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # MQTT Message Broker
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: ksa-bridge-mosquitto
+    ports:
+      - "1884:1884"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-p", "1884", "-t", "ksa/bridge/status", "-C", "1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ksa-bridge
+
+  # Web Console Server
+  web-console:
+    image: python:3.11-slim
+    container_name: ksa-bridge-console
+    working_dir: /app
+    command: python -m http.server 8088
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./examples:/app:ro
+    restart: unless-stopped
+    networks:
+      - ksa-bridge
+
+networks:
+  ksa-bridge:
+    driver: bridge
+
+# Usage:
+#   docker-compose up              # Start all services
+#   docker-compose down            # Stop all services
+#   docker-compose logs -f         # View logs in real-time
+#   docker-compose ps              # Check service status
+#
+# Then:
+#   1. Launch KSA normally
+#   2. Open http://localhost:8088/hard-scifi/hardscifi-fdo-console.html
+#   3. Fly and watch telemetry appear!
+#
+# Ports:
+#   1884  - MQTT broker (for KSA-Bridge mod)
+#   9001  - WebSocket (for web consoles)
+#   8088  - HTTP (to access example consoles)

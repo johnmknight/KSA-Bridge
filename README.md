@@ -73,35 +73,35 @@ The sample consoles in `examples/` are standalone HTML files — serve them howe
 
 ## Quick Start
 
-1. **Install Mosquitto** and configure it to listen on port 1884 (MQTT) and port 9001 (WebSocket).
+### For Beginners: Step-by-Step Setup
 
-2. **Build the mod:**
-   ```bash
-   cd KSA-Bridge
-   dotnet build --configuration Release
-   ```
+Follow **[SETUP.md](SETUP.md)** — it walks you through everything for your platform:
 
-3. **Deploy** the built DLL to your KSA mods directory (see [INSTALLATION.md](INSTALLATION.md) for platform-specific paths):
-   ```
-   Windows:  Documents\My Games\Kitten Space Agency\mods\KSA-Bridge\
-   Linux:    ~/.local/share/Kitten Space Agency/mods/KSA-Bridge/
-   macOS:    ~/Library/Application Support/Kitten Space Agency/mods/KSA-Bridge/
-   ```
-   The directory needs `KSA-Bridge.dll` and `mod.toml`.
+- **Windows** users: Run `setup.bat`
+- **Linux/macOS** users: Run `./setup.sh`
+- **Docker users**: `docker-compose up`
 
-4. **Launch KSA** — the mod auto-connects to the MQTT broker and starts publishing telemetry.
+Each includes verification steps and troubleshooting.
 
-5. **Open a console** — the CDN version (`examples/hard-scifi/hardscifi-fdo-console-cdn.html`) works by opening it directly in your browser with no web server needed. Other consoles that load local assets (topojson, surface data) need to be served over HTTP — use any static file server you like:
+### For Experienced Developers: Manual Setup
 
-   ```bash
-   # Python (built-in, no install needed)
-   cd examples
-   python -m http.server 8088
+1. Install prerequisites: .NET 10.0 SDK, Mosquitto MQTT broker
+2. Build: `cd KSA-Bridge && dotnet build --configuration Release`
+3. Deploy DLL + config files to your KSA mods directory
+4. Launch KSA and verify `[KSA-Bridge] Connected to 127.0.0.1:1884` in logs
+5. Serve examples: `cd examples && python -m http.server 8088`
+6. Open console: `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
 
-   # Or Waitress, Nginx, Caddy, Live Server in VS Code — whatever you have
-   ```
+See [INSTALLATION.md](INSTALLATION.md) for platform-specific paths.
 
-   Then browse to `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
+### One-Command Setup (Docker)
+
+If you have Docker installed:
+```bash
+docker-compose up
+```
+
+Then launch KSA and open `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
 
 ## Surface Data
 
@@ -114,13 +114,14 @@ The FDO console renders surface features on the 3D globe for spatial context. Da
 | Mars | USGS SIM 3292 Global Geologic Map | GeoJSON |
 | Jupiter | Cloud band boundaries, storm outlines | GeoJSON |
 | Mercury | Crater rings | TopoJSON |
+| Venus | Feature outlines | TopoJSON |
 
 **Mars geologic contacts** are derived from the [USGS SIM 3292](https://pubs.usgs.gov/sim/3292/) Global Geologic Map of Mars (Tanaka et al., 2014). The source shapefile (`SIM3292_Global_Contacts.shp`, ~32 MB) uses the GCS Mars 2000 Sphere projection (geographic lat/lon on a Mars ellipsoid). To regenerate the simplified GeoJSON from the raw USGS data:
 
 ```bash
 # Requires: pip install geopandas fiona shapely
 # Place USGS SIM3292 shapefiles in examples/hard-scifi/data/usgs_raw/
-python convert_mars.py
+python scripts/data-gen/convert_mars.py
 ```
 
 This reads the contacts shapefile, simplifies geometry (tolerance 1.0°), removes null geometries, and writes `examples/hard-scifi/data/mars_contacts.geojson` (~842 KB, 3708 features). Contact types are color-coded on the globe: Certain boundaries in amber, Approximate in dark rust, Internal in teal, and Border contacts in bright gold.
@@ -138,6 +139,10 @@ KSA uses a Z-up coordinate system (CCI — Celestial Centered Inertial). The web
 ## UI Style Guide
 
 The `docs/` directory contains the Near-Future Hard Sci-Fi UI/UX Style Guide, which defines the visual language for all sample consoles. It synthesizes the design principles of *The Martian* (Territory Studio), *The Expanse*, and *Project Hail Mary* into a practical component catalog.
+
+## Related Projects
+
+- **[KSA-PAO](docs/KSA-PAO-Design-v0.2.md)** — Public Affairs Officer companion app. Subscribes to KSA-Bridge telemetry and generates NASA-style mission commentary in real time using templates and LLM-generated narrative via Piper TTS. Publishes commentary back to the broker on `ksa/pao/announcement`.
 
 ## License
 
