@@ -278,6 +278,7 @@
 const RAD2DEG = 180 / Math.PI;
 const DEG2RAD = Math.PI / 180;
 const GLOBE_R = 6371; // visual scale: 1 unit = 1 km (not tied to any specific body)
+let orbitScale = 1;   // GLOBE_R / parentRadius_km — updated when parent body telemetry arrives
 const getStart = Date.now();
 // ── STATE ────────────────────────────────────────────────────
 const state = {
@@ -311,6 +312,9 @@ const darkScene = {
   marsApprox: 0x8B5E2B, marsApproxOp: 0.35,
   marsInternal: 0x5A8A7A, marsInternalOp: 0.40,
   marsBorder: 0xFFAA44, marsBorderOp: 0.70,
+  jupBand: 0xC4956A, jupBandOp: 0.50,
+  jupHash: 0x8B6B4A, jupHashOp: 0.25,
+  jupStorm: 0xCC5533, jupStormOp: 0.65,
   orbit: 0x4a9eff, orbitOp: 0.6,
   ship: 0x4a9eff, apo: 0xe67e22, per: 0x2ecc71,
   starOp: 0.7
@@ -327,6 +331,9 @@ const lightScene = {
   marsApprox: 0x7A4E1B, marsApproxOp: 0.40,
   marsInternal: 0x4A7A6A, marsInternalOp: 0.45,
   marsBorder: 0xDD8822, marsBorderOp: 0.75,
+  jupBand: 0xA07850, jupBandOp: 0.55,
+  jupHash: 0x7A5A3A, jupHashOp: 0.30,
+  jupStorm: 0xAA4422, jupStormOp: 0.70,
   orbit: 0x0077BB, orbitOp: 0.7,
   ship: 0x0077BB, apo: 0xCC4400, per: 0x1A7A3A,
   starOp: 0.15
@@ -373,9 +380,9 @@ function updateCamera() {
 
   if (trackShip && state.posX != null) {
     // Ship position in Three.js coords
-    const sx = state.posX / 1000;
-    const sy = state.posZ / 1000;
-    const sz = -state.posY / 1000;
+    const sx = (state.posX / 1000) * orbitScale;
+    const sy = (state.posZ / 1000) * orbitScale;
+    const sz = (-state.posY / 1000) * orbitScale;
     // Camera orbits around midpoint between ship and planet center,
     // keeping both in view while tracking the ship's motion
     const lookX = sx * 0.5;
@@ -552,6 +559,7 @@ const bodyAtmoColors = {
   'Moon':    { inner: [0.5, 0.5, 0.55],  outer: [0.4, 0.4, 0.45] },
   'Mercury': { inner: [0.5, 0.45, 0.4],  outer: [0.45, 0.4, 0.35] },
   'Venus':   { inner: [0.9, 0.7, 0.3],   outer: [1.0, 0.85, 0.4] },
+  'Jupiter': { inner: [0.7, 0.55, 0.3],  outer: [0.85, 0.65, 0.35] },
   'default': { inner: [0.3, 0.5, 0.8],   outer: [0.2, 0.6, 0.9]  }
 };
 function setAtmosphereForBody(bodyName) {
@@ -576,6 +584,14 @@ const marsContactMats = {
   Approx:   new THREE.LineBasicMaterial({ color: currentThemeColors.marsApprox,   transparent: true, opacity: currentThemeColors.marsApproxOp,   depthWrite: false }),
   Internal: new THREE.LineBasicMaterial({ color: currentThemeColors.marsInternal, transparent: true, opacity: currentThemeColors.marsInternalOp, depthWrite: false }),
   Border:   new THREE.LineBasicMaterial({ color: currentThemeColors.marsBorder,   transparent: true, opacity: currentThemeColors.marsBorderOp,   depthWrite: false })
+};
+// Jupiter band materials (by feature type)
+const jupiterMats = {
+  boundary: new THREE.LineBasicMaterial({ color: currentThemeColors.jupBand,  transparent: true, opacity: currentThemeColors.jupBandOp,  depthWrite: false }),
+  belt_hash: new THREE.LineBasicMaterial({ color: currentThemeColors.jupHash,  transparent: true, opacity: currentThemeColors.jupHashOp,  depthWrite: false }),
+  storm:    new THREE.LineBasicMaterial({ color: currentThemeColors.jupStorm, transparent: true, opacity: currentThemeColors.jupStormOp, depthWrite: false }),
+  equator:      new THREE.LineBasicMaterial({ color: currentThemeColors.jupBand,  transparent: true, opacity: currentThemeColors.jupBandOp,  depthWrite: false }),
+  storm_detail: new THREE.LineBasicMaterial({ color: currentThemeColors.jupStorm, transparent: true, opacity: currentThemeColors.jupStormOp * 0.6, depthWrite: false })
 };
 
 function latLonToVec3(lat, lon, r) {
@@ -652,6 +668,10 @@ const bodyDataConfig = {
   'Venus': {
     craters: { url: 'data/venus_craters.topojson', type: 'topojson' },
     labels:  { url: 'data/venus_labels.json', type: 'labels' }
+  },
+  'Jupiter': {
+    outlines: { url: 'data/jupiter_bands.geojson', type: 'geojson' },
+    labels:   { url: 'data/jupiter_labels.json', type: 'labels' }
   }
 };
 
@@ -712,9 +732,19 @@ async function loadBodyData(bodyName) {
         renderFeatures(geojson, coastlineMat, GLOBE_R * 1.001);
         loaded = true;
       } else {
-        // Check if data has ConType properties (Mars geologic contacts)
+        // Check if data has typed features (Mars ConType or Jupiter band types)
         const hasConType = data.features && data.features.some(f => f.properties && f.properties.ConType);
-        if (hasConType) {
+        const hasJupType = data.features && data.features.some(f => f.properties && f.properties.type && ['boundary','belt_hash','storm','storm_detail','equator'].includes(f.properties.type));
+        if (hasJupType) {
+          // Jupiter: render each feature type with its own material
+          ['boundary','belt_hash','storm','storm_detail','equator'].forEach(ftype => {
+            const subset = { type: 'FeatureCollection', features: data.features.filter(f => f.properties && f.properties.type === ftype) };
+            if (subset.features.length > 0) {
+              renderFeatures(subset, jupiterMats[ftype] || coastlineMat, GLOBE_R * 1.001);
+            }
+          });
+          loaded = true;
+        } else if (hasConType) {
           // Render each ConType with its own material
           Object.keys(marsContactMats).forEach(conType => {
             const subset = { type: 'FeatureCollection', features: data.features.filter(f => f.properties && f.properties.ConType === conType) };
@@ -791,10 +821,10 @@ function updateOrbit3D() {
   if (state.semiMajorAxis == null || state.eccentricity == null) return;
   if (state.inclination == null || state.lan == null || state.aop == null) return;
 
-  // Orbital elements in km
-  const a = state.semiMajorAxis / 1000;   // semi-major axis (km)
+  // Orbital elements scaled to globe (orbitScale = GLOBE_R / parentRadius_km)
+  const a = (state.semiMajorAxis / 1000) * orbitScale;   // semi-major axis (globe units)
   const e = state.eccentricity;
-  const b = a * Math.sqrt(1 - e * e);     // semi-minor axis (km)
+  const b = a * Math.sqrt(1 - e * e);     // semi-minor axis (globe units)
 
   const incRad = state.inclination;                    // already radians from KSA
   const lanRad = state.longitudeOfAscendingNode || state.lan;  // radians
@@ -844,9 +874,9 @@ function updateOrbit3D() {
   // Ship marker: use CCI state vectors (direct, not via Keplerian)
   if (state.posX != null) {
     // CCI (Z-up) → Three.js (Y-up): x→x, z→y, -y→z
-    const sx = state.posX / 1000;
-    const sy = state.posZ / 1000;
-    const sz = -state.posY / 1000;
+    const sx = (state.posX / 1000) * orbitScale;
+    const sy = (state.posZ / 1000) * orbitScale;
+    const sz = (-state.posY / 1000) * orbitScale;
     shipMarker.position.set(sx, sy, sz);
     shipMarker.visible = true;
   }
@@ -929,7 +959,10 @@ client.on('message', (topic, payload) => {
         if (d.semiMinorAxis != null) state.semiMinorAxis = d.semiMinorAxis;
         if (d.longitudeOfAscendingNode != null) state.lan = d.longitudeOfAscendingNode;
         if (d.argumentOfPeriapsis != null) state.aop = d.argumentOfPeriapsis;
-        if (d.parentRadius != null) state.parentRadius = d.parentRadius;
+        if (d.parentRadius != null) {
+          state.parentRadius = d.parentRadius;
+          orbitScale = GLOBE_R / (d.parentRadius / 1000);  // update globe scaling
+        }
         if (d.parentMass != null) state.parentMass = d.parentMass;
         if (d.orbitType != null) state.orbitType = d.orbitType;
         if (d.timeToApoapsis != null) state.timeToApo = d.timeToApoapsis;
@@ -1157,6 +1190,12 @@ function applyThemeToScene(t) {
   marsContactMats.Approx.color.setHex(t.marsApprox);     marsContactMats.Approx.opacity = t.marsApproxOp;
   marsContactMats.Internal.color.setHex(t.marsInternal);  marsContactMats.Internal.opacity = t.marsInternalOp;
   marsContactMats.Border.color.setHex(t.marsBorder);     marsContactMats.Border.opacity = t.marsBorderOp;
+  // Jupiter band materials
+  jupiterMats.boundary.color.setHex(t.jupBand);   jupiterMats.boundary.opacity = t.jupBandOp;
+  jupiterMats.belt_hash.color.setHex(t.jupHash);  jupiterMats.belt_hash.opacity = t.jupHashOp;
+  jupiterMats.storm.color.setHex(t.jupStorm);      jupiterMats.storm.opacity = t.jupStormOp;
+  jupiterMats.equator.color.setHex(t.jupBand);     jupiterMats.equator.opacity = t.jupBandOp;
+  jupiterMats.storm_detail.color.setHex(t.jupStorm); jupiterMats.storm_detail.opacity = t.jupStormOp * 0.6;
   // Markers
   if (shipMarker) shipMarker.material.color.setHex(t.ship);
   if (apoMarker) apoMarker.material.color.setHex(t.apo);
