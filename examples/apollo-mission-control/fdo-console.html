@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apollo Mission Control - Flight Dynamics Officer</title>
+    <script src="lib/mqtt.min.js"></script>
+    <style>
+        :root {
+            --base-font-size: clamp(14px, 2vw, 24px);
+            --header-font-size: clamp(16px, 2.5vw, 28px);
+            --padding-base: clamp(8px, 2vw, 20px);
+            --border-width: 2px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html { 
+            font-size: 16px;
+        }
+        
+        body { 
+            background-color: #000011; 
+            color: #00d4ff; 
+            font-family: 'Courier New', 'Courier', monospace; 
+            font-size: var(--base-font-size);
+            line-height: 1.3; 
+            overflow: hidden;
+        }
+        
+        .container { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            border: var(--border-width) solid #00d4ff; 
+            background: linear-gradient(135deg, #000011 0%, #001133 100%); 
+        }
+        
+        .header { 
+            padding: var(--padding-base); 
+            border-bottom: var(--border-width) solid #00d4ff; 
+            background-color: rgba(0, 20, 51, 0.95); 
+            text-align: center; 
+            font-weight: bold; 
+            letter-spacing: clamp(1px, 0.2vw, 3px);
+            font-size: var(--header-font-size);
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .header-right { 
+            position: absolute; 
+            top: var(--padding-base); 
+            right: var(--padding-base); 
+            display: flex; 
+            align-items: center; 
+            gap: clamp(4px, 1vw, 10px);
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        
+        .status-indicator { 
+            display: inline-block; 
+            width: clamp(8px, 1.2vw, 14px); 
+            height: clamp(8px, 1.2vw, 14px); 
+            border-radius: 50%; 
+            animation: blink 1s infinite; 
+        }
+        
+        .status-connected { background-color: #00ff00; }
+        .status-disconnected { background-color: #ff0000; }
+        
+        @keyframes blink { 
+            0%, 49%, 100% { opacity: 1; } 
+            50%, 99% { opacity: 0.3; } 
+        }
+        
+        .console-wrapper { 
+            flex: 1; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            padding: var(--padding-base); 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            font-family: 'Courier New', 'Courier', monospace; 
+            line-height: clamp(1.3, 1.6vw, 1.8);
+            font-size: var(--base-font-size);
+        }
+        
+        .scanlines { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: repeating-linear-gradient(
+                0deg, 
+                rgba(0, 0, 0, 0.15), 
+                rgba(0, 0, 0, 0.15) 1px, 
+                transparent 1px, 
+                transparent 2px
+            ); 
+            pointer-events: none; 
+            z-index: 1000; 
+        }
+        
+        .console-wrapper::-webkit-scrollbar { 
+            width: clamp(6px, 1.2vw, 14px); 
+        }
+        
+        .console-wrapper::-webkit-scrollbar-track { 
+            background: rgba(0, 212, 255, 0.1); 
+        }
+        
+        .console-wrapper::-webkit-scrollbar-thumb { 
+            background: #00d4ff;
+            border-radius: 2px;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            :root {
+                --base-font-size: clamp(11px, 3vw, 16px);
+                --header-font-size: clamp(13px, 3.5vw, 18px);
+                --padding-base: clamp(6px, 2.5vw, 16px);
+            }
+
+            .header-right {
+                position: static;
+                justify-content: center;
+                margin-top: clamp(4px, 1vw, 8px);
+                width: 100%;
+            }
+        }
+
+        /* Large displays */
+        @media (min-width: 1920px) {
+            .console-wrapper {
+                column-count: 2;
+                column-gap: clamp(20px, 3vw, 40px);
+            }
+        }
+
+        /* Extremely large displays */
+        @media (min-width: 2560px) {
+            .console-wrapper {
+                column-count: 3;
+                column-gap: clamp(30px, 3vw, 50px);
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            :root {
+                --padding-base: clamp(10px, 3vw, 24px);
+            }
+            
+            .header-right {
+                gap: clamp(6px, 2vw, 16px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            APOLLO MISSION CONTROL - FLIGHT DYNAMICS OFFICER
+            <div class="header-right">
+                <span class="status-indicator status-disconnected" id="statusIndicator"></span>
+                <span id="connectionStatus">DISCONNECTED</span>
+            </div>
+        </div>
+        <div class="console-wrapper" id="consoleOutput"></div>
+    </div>
+    <div class="scanlines"></div>
+
+    <script>
+        var client = null;
+        var telemetryData = {};
+        
+        // Constants for unit conversions
+        var RAD2DEG = 180 / Math.PI;
+        var DEG2RAD = Math.PI / 180;
+
+        function formatNumber(num, width, decimals) {
+            width = width || 8;
+            decimals = decimals || 2;
+            if (num === undefined || num === null) return '---'.padStart(width);
+            if (isNaN(num)) return '---'.padStart(width);
+            return num.toFixed(decimals).padStart(width);
+        }
+
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '--:--:--';
+            var h = Math.floor(seconds / 3600);
+            var m = Math.floor((seconds % 3600) / 60);
+            var s = Math.floor(seconds % 60);
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        function updateDisplay() {
+            var output = '';
+            output += 'ODO - ORBITAL DYNAMICS\n';
+            output += '---------------------------------------------\n';
+            output += 'APO  ' + formatNumber(telemetryData.apoapsis) + '  KM\n';
+            output += 'PERI ' + formatNumber(telemetryData.periapsis) + '  KM\n';
+            output += 'INCL ' + formatNumber(telemetryData.inclination, 6, 1) + '  DEG\n';
+            output += 'ECC  ' + formatNumber(telemetryData.eccentricity, 8, 4) + '\n';
+            output += 'SMA  ' + formatNumber(telemetryData.semiMajorAxis) + '  KM\n';
+            output += 'LAN  ' + formatNumber(telemetryData.lan, 6, 1) + '  DEG\n';
+            output += 'AOP  ' + formatNumber(telemetryData.aop, 6, 1) + '  DEG\n';
+            output += 'PER  ' + formatNumber(telemetryData.orbitalPeriod) + '  MIN\n\n';
+            output += 'VEL - VELOCITY\n';
+            output += '---------------------------------------------\n';
+            output += 'ORB  ' + formatNumber(telemetryData.orbitalVelocity) + '  M/S\n';
+            output += 'SUR  ' + formatNumber(telemetryData.surfaceVelocity) + '  M/S\n';
+            output += 'VER  ' + formatNumber(telemetryData.verticalVelocity) + '  M/S\n\n';
+            output += 'ALT - ALTITUDE & POSITION\n';
+            output += '---------------------------------------------\n';
+            output += 'ALT  ' + formatNumber(telemetryData.altitude) + '  KM\n';
+            output += 'LAT  ' + formatNumber(telemetryData.latitude, 8, 3) + '  DEG\n';
+            output += 'LON  ' + formatNumber(telemetryData.longitude, 8, 3) + '  DEG\n\n';
+            output += 'ATT - ATTITUDE\n';
+            output += '---------------------------------------------\n';
+            output += 'HDG  ' + formatNumber(telemetryData.heading, 6, 1) + '  DEG\n';
+            output += 'PITCH ' + formatNumber(telemetryData.pitch, 6, 1) + '  DEG\n';
+            output += 'ROLL ' + formatNumber(telemetryData.roll, 6, 1) + '  DEG\n\n';
+            output += 'VEH - VEHICLE\n';
+            output += '---------------------------------------------\n';
+            output += 'NAME ' + (telemetryData.vehicleName || '---').padEnd(20) + '\n';
+            output += 'MASS ' + formatNumber(telemetryData.vehicleMass) + '  KG\n\n';
+            output += 'RES - RESOURCES\n';
+            output += '---------------------------------------------\n';
+            output += 'FUEL ' + formatNumber(telemetryData.fuelAmount) + '  UNITS\n';
+            output += 'OX   ' + formatNumber(telemetryData.oxidizerAmount) + '  UNITS\n';
+            output += 'MONO ' + formatNumber(telemetryData.monopropAmount) + '  UNITS\n';
+            output += 'ELEC ' + formatNumber(telemetryData.electricAmount) + '  KWH\n';
+            output += 'TWR  ' + formatNumber(telemetryData.twr, 6, 2) + '\n\n';
+            output += 'MAN - MANEUVER\n';
+            output += '---------------------------------------------\n';
+            output += 'TIG  ' + formatTime(telemetryData.timeToBurn) + '\n';
+            output += 'BURN ' + formatNumber(telemetryData.burnDuration) + '  SEC\n';
+            output += 'DV   ' + formatNumber(telemetryData.deltaV) + '  M/S\n\n';
+            output += 'MET - MISSION ELAPSED TIME\n';
+            output += '---------------------------------------------\n';
+            output += 'TIME ' + formatTime(telemetryData.missionTime) + '\n';
+            document.getElementById('consoleOutput').textContent = output;
+        }
+
+        function connectMQTT() {
+            client = mqtt.connect('ws://127.0.0.1:9001');
+
+            client.on('connect', function() {
+                document.getElementById('statusIndicator').className = 'status-indicator status-connected';
+                document.getElementById('connectionStatus').textContent = 'CONNECTED';
+                client.subscribe('ksa/telemetry/#');
+                client.subscribe('ksa/bridge/status');
+            });
+
+            client.on('message', function(topic, payload) {
+                try {
+                    var data = JSON.parse(payload.toString());
+                    
+                    if (topic.includes('vehicle')) { 
+                        telemetryData.vehicleName = data.name; 
+                        telemetryData.vehicleStatus = data.status; 
+                        telemetryData.vehicleMass = data.mass;
+                        telemetryData.thrust = data.thrust;
+                    }
+                    else if (topic.includes('orbit')) { 
+                        telemetryData.apoapsis = data.apoapsis; 
+                        telemetryData.periapsis = data.periapsis; 
+                        // Convert from radians to degrees
+                        telemetryData.inclination = data.inclination != null ? data.inclination * RAD2DEG : null;
+                        telemetryData.eccentricity = data.eccentricity;
+                        // Convert period from seconds to minutes
+                        telemetryData.orbitalPeriod = data.period != null ? data.period / 60 : null;
+                        // Convert semi-major axis from meters to km
+                        telemetryData.semiMajorAxis = data.semiMajorAxis != null ? data.semiMajorAxis / 1000 : null;
+                        // Convert LAN and AOP from radians to degrees
+                        telemetryData.lan = data.lan != null ? data.lan * RAD2DEG : null;
+                        telemetryData.aop = data.aop != null ? data.aop * RAD2DEG : null;
+                    }
+                    else if (topic.includes('velocity')) { 
+                        telemetryData.orbitalVelocity = data.orbital; 
+                        telemetryData.surfaceVelocity = data.surface; 
+                        telemetryData.verticalVelocity = data.vertical; 
+                    }
+                    else if (topic.includes('altitude')) { 
+                        telemetryData.altitude = data.value; 
+                        telemetryData.latitude = data.latitude; 
+                        telemetryData.longitude = data.longitude; 
+                    }
+                    else if (topic.includes('attitude')) { 
+                        // Convert from radians to degrees
+                        telemetryData.heading = data.heading != null ? data.heading * RAD2DEG : null;
+                        telemetryData.pitch = data.pitch != null ? data.pitch * RAD2DEG : null;
+                        telemetryData.roll = data.roll != null ? data.roll * RAD2DEG : null;
+                    }
+                    else if (topic.includes('resources')) { 
+                        telemetryData.fuelAmount = data.fuel; 
+                        telemetryData.oxidizerAmount = data.oxidizer; 
+                        telemetryData.monopropAmount = data.monopropellant; 
+                        telemetryData.electricAmount = data.electric; 
+                    }
+                    else if (topic.includes('maneuver')) { 
+                        telemetryData.timeToBurn = data.timeToBurn; 
+                        telemetryData.burnDuration = data.burnDuration; 
+                        telemetryData.deltaV = data.deltaV;
+                        // Calculate TWR if thrust and mass are available
+                        if (telemetryData.thrust != null && telemetryData.vehicleMass != null && telemetryData.vehicleMass > 0) {
+                            var g0 = 9.81;
+                            telemetryData.twr = telemetryData.thrust / (telemetryData.vehicleMass * g0);
+                        }
+                    }
+                    else if (topic.includes('mission-time') || topic.includes('mission_time')) { 
+                        telemetryData.missionTime = data.value; 
+                    }
+                    updateDisplay();
+                } catch (e) { 
+                    console.error('Error:', e); 
+                }
+            });
+
+            client.on('error', function(err) { 
+                document.getElementById('statusIndicator').className = 'status-indicator status-disconnected'; 
+                document.getElementById('connectionStatus').textContent = 'ERROR'; 
+            });
+
+            client.on('close', function() { 
+                document.getElementById('statusIndicator').className = 'status-indicator status-disconnected'; 
+                document.getElementById('connectionStatus').textContent = 'DISCONNECTED'; 
+            });
+        }
+        
+        setTimeout(function() { 
+            connectMQTT(); 
+            updateDisplay(); 
+        }, 100);
+        
+        window.addEventListener('beforeunload', function() { 
+            if (client) client.end(); 
+        });
+    </script>
+</body>
+</html>
