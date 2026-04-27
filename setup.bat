@@ -133,6 +133,52 @@ copy "KSA-Bridge\ksa-bridge.toml" "%MODS_PATH%\ksa-bridge.toml" /Y >nul
 echo   ✓ Mod deployed to: !MODS_PATH!
 echo.
 
+REM ========================================
+REM [6/6] Deploy launch-starmap.bat to the StarMap install dir
+REM ========================================
+REM
+REM This launcher MUST live in C:\Program Files\StarMap\ and be run from
+REM there. StarMap.Loader.exe inherits its working directory from the
+REM launcher, and it expects that working directory to be its own install
+REM dir for mod loading. Running the repo copy from the repo dir launches
+REM the loader with the wrong CWD and mods will not load (telemetry
+REM will not flow).
+REM
+REM Note: as of StarMap 0.4.5, the launch script invokes StarMap.Loader.exe
+REM (not StarMap.exe). The new StarMap.exe is a WIP "Launcher" stub that
+REM prints "Currently WIP, please use the standalone version or launch
+REM 'StarMap.Loader.exe'" and exits immediately. The repo's launch-starmap.bat
+REM has been updated to call Loader.exe directly.
+REM
+REM Writing into C:\Program Files\ requires elevation. If this step fails,
+REM the user can manually copy scripts\launch-starmap.bat to
+REM C:\Program Files\StarMap\ from an elevated prompt.
+
+echo [6/6] Deploying launch-starmap.bat to StarMap install dir...
+set STARMAP_DIR=C:\Program Files\StarMap
+if not exist "%STARMAP_DIR%\StarMap.exe" (
+    color 0E
+    echo   ! StarMap.exe not found at %STARMAP_DIR%
+    echo     Skipping launcher deployment.
+    echo     If StarMap is installed elsewhere, manually copy
+    echo     scripts\launch-starmap.bat into that directory.
+    echo.
+    color 0F
+) else (
+    copy "scripts\launch-starmap.bat" "%STARMAP_DIR%\launch-starmap.bat" /Y >nul 2>&1
+    if errorlevel 1 (
+        color 0E
+        echo   ! Could not write to %STARMAP_DIR% (likely needs admin).
+        echo     Run this manually from an elevated prompt:
+        echo       copy /Y "%~dp0scripts\launch-starmap.bat" "%STARMAP_DIR%\launch-starmap.bat"
+        echo.
+        color 0F
+    ) else (
+        echo   ✓ launcher deployed to: %STARMAP_DIR%\launch-starmap.bat
+        echo.
+    )
+)
+
 REM Success
 color 0A
 echo ========================================
@@ -141,8 +187,11 @@ echo ========================================
 echo.
 echo Next steps:
 echo.
-echo 1. Launch KSA:
-echo    C:\Program Files\StarMap\launch-starmap.bat
+echo 1. Launch KSA from the StarMap install dir:
+echo    "C:\Program Files\StarMap\launch-starmap.bat"
+echo    ^(MUST be the StarMap-dir copy, not the repo copy --
+echo     StarMap.exe needs the StarMap dir as its working dir
+echo     for mods to load and telemetry to flow.^)
 echo.
 echo 2. In a new terminal, start the web console:
 echo    .\scripts\serve-examples.bat
