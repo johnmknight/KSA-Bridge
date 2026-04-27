@@ -77,29 +77,34 @@ public class Bridge
             possiblePaths.Add(Path.Combine(
                 AppContext.BaseDirectory, "Content", "KSA-Bridge", "ksa-bridge.toml"));
             
-            // Check each path in order
-            _configPath = null;
+            // Check each path in order. Use a local nullable string for the
+            // search so the field _configPath stays non-nullable for the rest
+            // of init (it's required by BridgeConfig.Load and SetConfigPath).
+            string? foundPath = null;
             foreach (var path in possiblePaths)
             {
                 if (File.Exists(path))
                 {
-                    _configPath = path;
+                    foundPath = path;
                     Console.WriteLine($"[KSA-Bridge] Found config at: {path}");
                     break;
                 }
             }
-            
-            // If not found, default to first user path
-            if (_configPath == null)
+
+            // If not found, default to first user path so we have somewhere
+            // to save defaults to.
+            if (foundPath == null)
             {
-                _configPath = possiblePaths[0];
+                foundPath = possiblePaths[0];
                 Console.WriteLine($"[KSA-Bridge] Config not found. Checked {possiblePaths.Count} locations:");
                 foreach (var path in possiblePaths)
                 {
                     Console.WriteLine($"[KSA-Bridge]   - {path}");
                 }
-                Console.WriteLine($"[KSA-Bridge] Will use defaults, would save to: {_configPath}");
+                Console.WriteLine($"[KSA-Bridge] Will use defaults, would save to: {foundPath}");
             }
+
+            _configPath = foundPath;
             
             Console.WriteLine("[KSA-Bridge] Loading config...");
             _config    = BridgeConfig.Load(_configPath);
@@ -166,7 +171,7 @@ public class Bridge
         {
             Console.WriteLine("[KSA-Bridge] Reloading config from: " + _configPath);
             
-            if (_configPath != null && File.Exists(_configPath))
+            if (File.Exists(_configPath))
             {
                 var newConfig = BridgeConfig.Load(_configPath);
                 _config = newConfig;
