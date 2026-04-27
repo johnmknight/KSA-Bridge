@@ -15,7 +15,9 @@ ksa-bridge.toml
 
 ## Node.js
 node_modules/
-package-lock.json
+# package-lock.json is committed (standard JS practice for reproducible
+# `npm install` / `npm ci`). The lockfile pins exact versions of the
+# vendored libs that get copied into examples/*/lib/ via `npm run vendor`.
 
 ## Build/deploy scripts and logs
 *.log
@@ -36,3 +38,27 @@ tool_list.txt
 ## Temporary helper scripts
 download_libs.js
 embed_coastlines.js
+
+## Voice models (defensive — KSA-Bridge does not ship voices,
+## but a sibling consumer like KSA-PAO might be cloned or symlinked
+## here during development. Keep large binary model files out of git.)
+*.onnx
+*.onnx.json
+voices/
+models/
+
+## OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Environment & secrets
+.env
+.env.*
+*.secret
+
+## AI assistant scratch files (Claude / Desktop Commander diagnostic
+## wrappers). The `_dc_` prefix marks transient scripts/output dumps
+## that helpers spawn for one-off diagnostics. Always disposable.
+_dc_*
+__cleanup*
