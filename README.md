@@ -12,19 +12,30 @@ KSA-Bridge is a C# StarMap mod that reads the KSA game API every frame and publi
 
 The `examples/` directory contains ready-to-use mission control displays that consume KSA-Bridge telemetry:
 
-### Hard Sci-Fi — FDO Console
-`examples/hard-scifi/hardscifi-fdo-console.html`
+### Hard Sci-Fi — FDO Console (recommended)
+`examples/hard-scifi/hardscifi-fdo-console-cdn.html`
 
 A Three.js holographic 3D globe with live orbit rendering, continent outlines, and projected markers. Inspired by the UI design language of *The Martian*, *The Expanse*, and *Project Hail Mary*.
 
 - Real-time 3D orbit ellipse with Ap/Pe/Ship markers
 - Planet rotation from CCF→CCI quaternion telemetry
-- Natural Earth 110m coastline overlay
+- **Per-body surface data**: switches between Earth coastlines, Moon mare/craters, Mars geologic contacts (USGS SIM 3292), Jupiter cloud bands, Saturn rings + bands, Mercury craters, and Venus features as the active vehicle's parent body changes
 - Ship tracking camera mode
 - Dark (Ship Bridge) and Light (HABitat Research) themes
 - Trajectory history sparklines, orbital timing, maneuver plan panels
 - Per-body atmosphere glow (blue for Earth, amber for Mars, grey for Moon, etc.)
-- USGS SIM 3292 Mars geologic boundary data, color-coded by contact type (Certain, Approximate, Internal, Border)
+
+This variant loads its JS libraries from cdnjs/jsdelivr at runtime and fetches per-body data files on demand. **It's the recommended console for actual mission use.** Requires internet on first load (or browser cache thereafter); the served `examples/` directory does not need to be online.
+
+#### Earth-only embed variant
+`examples/hard-scifi/hardscifi-fdo-console.html`
+
+Companion variant with all libraries served from `lib/` and Natural Earth 110m coastlines pre-extracted into a `COASTLINE_RINGS` constant inside the HTML (see `embed_coastlines.js`). **Earth-only by design** — no per-body data switching. Use this when:
+- you want a fully-offline, single-file console
+- you are using KSA only in Earth orbit
+- you are studying the console code as a learning reference (smaller surface, no runtime fetches)
+
+For everything else, use the CDN variant above.
 
 ### Apollo Mission Control — FDO Console
 `examples/apollo-mission-control/apollo-fdo-console.html`
@@ -90,7 +101,7 @@ Each includes verification steps and troubleshooting. Already past first install
 3. Deploy DLL + config files to your KSA mods directory
 4. Launch KSA and verify `[KSA-Bridge] Connected to 127.0.0.1:1884` in logs
 5. Serve examples: `cd examples && python -m http.server 8088`
-6. Open console: `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
+6. Open console: `http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
 
 See [INSTALLATION.md](INSTALLATION.md) for platform-specific paths.
 
@@ -101,7 +112,7 @@ If you have Docker installed:
 docker-compose up
 ```
 
-Then launch KSA and open `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
+Then launch KSA and open `http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
 
 ## Surface Data
 

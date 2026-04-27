@@ -312,8 +312,11 @@ After installation:
 2. **Start the example web server:** `scripts\serve-examples.bat` (Windows) or `cd examples && python3 -m http.server 8088` (Linux/macOS).
 3. **Launch KSA from the StarMap install directory.** Run `C:\Program Files\StarMap\launch-starmap.bat` (NOT the repo's `scripts\launch-starmap.bat`). StarMap.exe inherits its working directory from the launcher, and it requires CWD = its own install dir for mod loading to work. The `setup.bat` script deploys the repo's launch-starmap.bat to `C:\Program Files\StarMap\` at install time so the deployed copy stays in sync. Once the game is loaded, watch for `[KSA-Bridge] Connected to 127.0.0.1:1884` in the KSA log.
 4. **Open a console** in your browser:
-   - Hard Sci-Fi FDO: `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
+   - **Hard Sci-Fi FDO (recommended, multi-body):** `http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
+   - Hard Sci-Fi FDO — Earth-only embed variant: `http://localhost:8088/hard-scifi/hardscifi-fdo-console.html`
    - Apollo Mission Control: `http://localhost:8088/apollo-mission-control/apollo-fdo-console.html`
+
+   See [README.md → Sample Consoles](README.md#sample-consoles) for the difference between the CDN and embed variants.
 5. **Monitor MQTT directly** if you want raw topic output:
    ```bash
    mosquitto_sub -h 127.0.0.1 -p 1884 -t "ksa/#" -v

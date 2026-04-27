@@ -130,9 +130,9 @@ Open a new PowerShell window and run:
 .\scripts\serve-examples.bat
 ```
 
-Then open your browser to: **http://localhost:8088/hard-scifi/hardscifi-fdo-console.html**
+Then open your browser to: **http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html**
 
-You should see live telemetry from KSA appearing on the console.
+You should see live telemetry from KSA appearing on the console. (This is the CDN variant — multi-body, recommended for actual mission use. The companion `hardscifi-fdo-console.html` is an Earth-only fully-offline single-file demo; see README for when to use which.)
 
 ---
 
@@ -232,7 +232,7 @@ cd examples
 python3 -m http.server 8088
 ```
 
-Then open your browser to: **http://localhost:8088/hard-scifi/hardscifi-fdo-console.html**
+Then open your browser to: **http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html**
 
 ---
 
@@ -257,7 +257,7 @@ This starts:
 
 Then:
 1. Launch KSA normally
-2. Open browser to **http://localhost:8088/hard-scifi/hardscifi-fdo-console.html**
+2. Open browser to **http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html**
 3. Watch live telemetry appear
 
 **To stop:**

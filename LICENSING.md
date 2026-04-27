@@ -137,7 +137,9 @@ All documentation files (.md, .docx, etc.) are covered under the same MIT licens
 
 ### Hard Sci-Fi FDO Console
 - **License:** MIT (same as KSA-Bridge)
-- **Location:** `examples/hard-scifi/hardscifi-fdo-console.html`
+- **Locations:**
+  - `examples/hard-scifi/hardscifi-fdo-console-cdn.html` (recommended; multi-body, runtime fetches per-body data)
+  - `examples/hard-scifi/hardscifi-fdo-console.html` (Earth-only embed variant; fully offline single file)
 - **Dependencies:** Three.js (MIT), mqtt.js (MIT), TopoJSON (BSD-3-Clause)
 - **Data:** Planetary data (public domain) + NASA imagery (public domain)
 - ✅ All dependencies compatible; freely distributable

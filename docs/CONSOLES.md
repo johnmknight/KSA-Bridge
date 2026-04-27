@@ -69,6 +69,17 @@ A faithful recreation of the Apollo-era Flight Dynamics Officer display from NAS
 
 A modern, visually rich Flight Dynamics Officer console featuring a 3D orbital visualization using Three.js.
 
+### Two variants
+
+The Hard Sci-Fi console ships in two HTML files in `examples/hard-scifi/`:
+
+| File | Use case | Network at runtime | Multi-body |
+|------|----------|-------------------|------------|
+| **`hardscifi-fdo-console-cdn.html` (recommended)** | Actual mission use; multi-body support | Loads JS libs from cdnjs/jsdelivr; fetches per-body data files (`mars_contacts.geojson`, `saturn_rings.json`, etc.) on demand from the served `examples/hard-scifi/data/` directory | Yes — switches surface data based on the active vehicle's parent body |
+| `hardscifi-fdo-console.html` | Fully-offline single-file demo; Earth orbit only | Uses local `lib/*.min.js` only; Earth coastlines pre-extracted into a `COASTLINE_RINGS` constant by the `embed_coastlines.js` build step | No — Earth-only by design |
+
+The CDN variant is the one to open for normal use. The embed variant exists for two specific use cases: a fully-offline single-file demo, and a smaller-surface learning reference for studying the console code.
+
 **Features:**
 - Real-time 3D globe visualization showing vehicle position and orbit
 - Orbital element markers (apoapsis, periapsis) projected onto the globe
@@ -98,8 +109,10 @@ A modern, visually rich Flight Dynamics Officer console featuring a 3D orbital v
 - Status indicators: Green (nominal), Yellow (caution), Red (alarm)
 
 <!-- Screenshot pending. To see this console live, serve examples/ and open
-     http://localhost:8088/hard-scifi/hardscifi-fdo-console.html
-     while a vehicle is loaded in KSA. -->
+     http://localhost:8088/hard-scifi/hardscifi-fdo-console-cdn.html
+     (the CDN variant — multi-body) while a vehicle is loaded in KSA.
+     The companion hardscifi-fdo-console.html is an Earth-only fully-
+     offline embed variant. -->
 
 ---
 

@@ -46,7 +46,7 @@ publish-samples.bat
 
 Then open a console in your browser:
 - Apollo FDO: `http://127.0.0.1:8088/apollo-mission-control/fdo-console.html`
-- Hard Sci-Fi: `http://127.0.0.1:8088/hard-scifi/hardscifi-fdo-console.html`
+- Hard Sci-Fi (recommended, multi-body): `http://127.0.0.1:8088/hard-scifi/hardscifi-fdo-console-cdn.html`
 
 (Start the HTTP server first: `python -m http.server 8088` from the `examples/` directory.)
 
