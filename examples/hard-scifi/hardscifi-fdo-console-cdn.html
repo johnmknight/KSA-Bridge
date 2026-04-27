@@ -130,6 +130,14 @@
     .toggle-switch input:checked + .toggle-track { background:rgba(74,158,255,0.25); border-color:var(--accent); }
     .toggle-switch input:checked + .toggle-track::after { transform:translateX(12px); background:var(--accent); }
 
+
+    /* Display controls in panel */
+    .controls-group { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+    .controls-group .toggle-switch { font-size:11px; letter-spacing:0.06em; }
+    .controls-group .toggle-track { width:32px !important; height:18px !important; border-radius:9px !important; }
+    .controls-group .toggle-track::after { width:12px !important; height:12px !important; top:2px !important; left:2px !important; }
+    .controls-group .toggle-switch input:checked + .toggle-track::after { transform:translateX(14px); }
+
     /* ── LIGHT THEME — The Martian HABitat / Research (Style Guide §3.2) */
     body.light {
       --bg-primary:    #F0F4F8;
@@ -256,16 +264,20 @@
 
   <div class="panel" style="flex:1;min-height:0;display:flex;flex-direction:column">
     <div class="panel-title">Event Log</div>
-    <div class="event-log" id="event-log"></div>
+    <div class="event-log" id="event-log" style="flex:1;min-height:0;overflow-y:auto"></div>
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
+      <div class="panel-title">Display Controls</div>
+      <div class="controls-group">
+        <label class="toggle-switch" style="font-size:11px"><input type="checkbox" id="toggle-track-ship"><span class="toggle-track" style="width:32px;height:18px"></span>Track Ship</label>
+        <label class="toggle-switch" style="font-size:11px"><input type="checkbox" id="toggle-light-theme"><span class="toggle-track" style="width:32px;height:18px"></span>HAB Theme</label>
+      </div>
+    </div>
   </div>
 </div>
 <!-- Footer -->
 <div class="footer">
   <span>KSA-BRIDGE / MISSION CONTROL / FDO</span>
-  <div class="toggle-group">
-    <label class="toggle-switch"><input type="checkbox" id="toggle-track-ship"><span class="toggle-track"></span>Track Ship</label>
-    <label class="toggle-switch"><input type="checkbox" id="toggle-light-theme"><span class="toggle-track"></span>HAB Theme</label>
-  </div>
+  
   <span id="footer-topics">Topics: 0</span>
   <div class="footer-leds"><div class="led" id="led-mqtt"></div><div class="led" id="led-data"></div></div>
 </div>
@@ -315,6 +327,10 @@ const darkScene = {
   jupBand: 0xC4956A, jupBandOp: 0.50,
   jupHash: 0x8B6B4A, jupHashOp: 0.25,
   jupStorm: 0xCC5533, jupStormOp: 0.65,
+  satBand: 0xB8A070, satBandOp: 0.40,
+  satHash: 0x8A7855, satHashOp: 0.20,
+  satRing: 0xC8B888, satRingOp: 0.45,
+  satStorm: 0xDDCC88, satStormOp: 0.55,
   orbit: 0x4a9eff, orbitOp: 0.6,
   ship: 0x4a9eff, apo: 0xe67e22, per: 0x2ecc71,
   starOp: 0.7
@@ -334,6 +350,10 @@ const lightScene = {
   jupBand: 0xA07850, jupBandOp: 0.55,
   jupHash: 0x7A5A3A, jupHashOp: 0.30,
   jupStorm: 0xAA4422, jupStormOp: 0.70,
+  satBand: 0x9A8560, satBandOp: 0.45,
+  satHash: 0x7A6845, satHashOp: 0.25,
+  satRing: 0xA89868, satRingOp: 0.50,
+  satStorm: 0xBBAA66, satStormOp: 0.60,
   orbit: 0x0077BB, orbitOp: 0.7,
   ship: 0x0077BB, apo: 0xCC4400, per: 0x1A7A3A,
   starOp: 0.15
@@ -560,6 +580,7 @@ const bodyAtmoColors = {
   'Mercury': { inner: [0.5, 0.45, 0.4],  outer: [0.45, 0.4, 0.35] },
   'Venus':   { inner: [0.9, 0.7, 0.3],   outer: [1.0, 0.85, 0.4] },
   'Jupiter': { inner: [0.7, 0.55, 0.3],  outer: [0.85, 0.65, 0.35] },
+  'Saturn':  { inner: [0.75, 0.65, 0.4],  outer: [0.9, 0.8, 0.5] },
   'default': { inner: [0.3, 0.5, 0.8],   outer: [0.2, 0.6, 0.9]  }
 };
 function setAtmosphereForBody(bodyName) {
@@ -593,6 +614,16 @@ const jupiterMats = {
   equator:      new THREE.LineBasicMaterial({ color: currentThemeColors.jupBand,  transparent: true, opacity: currentThemeColors.jupBandOp,  depthWrite: false }),
   storm_detail: new THREE.LineBasicMaterial({ color: currentThemeColors.jupStorm, transparent: true, opacity: currentThemeColors.jupStormOp * 0.6, depthWrite: false })
 };
+// Saturn band materials
+const saturnMats = {
+  boundary:  new THREE.LineBasicMaterial({ color: currentThemeColors.satBand,  transparent: true, opacity: currentThemeColors.satBandOp,  depthWrite: false }),
+  belt_hash: new THREE.LineBasicMaterial({ color: currentThemeColors.satHash,  transparent: true, opacity: currentThemeColors.satHashOp,  depthWrite: false }),
+  storm:     new THREE.LineBasicMaterial({ color: currentThemeColors.satStorm, transparent: true, opacity: currentThemeColors.satStormOp, depthWrite: false }),
+  equator:   new THREE.LineBasicMaterial({ color: currentThemeColors.satBand,  transparent: true, opacity: currentThemeColors.satBandOp,  depthWrite: false })
+};
+const saturnRingMat = new THREE.LineBasicMaterial({
+  color: currentThemeColors.satRing, transparent: true, opacity: currentThemeColors.satRingOp, depthWrite: false
+});
 
 function latLonToVec3(lat, lon, r) {
   const phi = (90 - lat) * Math.PI / 180;
@@ -647,6 +678,58 @@ function renderFeatures(geojson, material, radius) {
   });
 }
 
+// Ring rendering for gas giants (Saturn, Uranus, Neptune)
+let ringFeatures = [];  // track ring meshes for cleanup
+function clearRingFeatures() {
+  ringFeatures.forEach(obj => {
+    earthGroup.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  ringFeatures = [];
+}
+function renderRings(ringData, material) {
+  const N = 128;  // points per ring circle
+  ringData.forEach(ring => {
+    if (ring.type === 'gap') return;  // skip gaps
+    // Draw inner and outer edge circles in the equatorial plane (y=0)
+    [ring.innerRadius, ring.outerRadius].forEach(radiusFactor => {
+      const r = GLOBE_R * radiusFactor;
+      const pts = [];
+      for (let i = 0; i <= N; i++) {
+        const angle = (i / N) * Math.PI * 2;
+        pts.push(new THREE.Vector3(r * Math.cos(angle), 0, r * Math.sin(angle)));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      // Vary opacity by ring density
+      const mat = material.clone();
+      mat.opacity = ring.opacity || material.opacity;
+      const line = new THREE.Line(geo, mat);
+      earthGroup.add(line);
+      ringFeatures.push(line);
+      surfaceFeatures.push(line);
+    });
+    // Fill between inner and outer with a few intermediate circles
+    const span = ring.outerRadius - ring.innerRadius;
+    const nFill = Math.max(1, Math.round(span * 15));  // ~15 lines per Saturn radius
+    for (let j = 1; j < nFill; j++) {
+      const frac = j / nFill;
+      const r = GLOBE_R * (ring.innerRadius + span * frac);
+      const pts = [];
+      for (let i = 0; i <= N; i++) {
+        const angle = (i / N) * Math.PI * 2;
+        pts.push(new THREE.Vector3(r * Math.cos(angle), 0, r * Math.sin(angle)));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = material.clone();
+      mat.opacity = (ring.opacity || material.opacity) * 0.6;
+      const line = new THREE.Line(geo, mat);
+      earthGroup.add(line);
+      ringFeatures.push(line);
+      surfaceFeatures.push(line);
+    }
+  });
+}
+
 // Body data configuration: what files to load for each body
 const bodyDataConfig = {
   'Earth': {
@@ -672,6 +755,11 @@ const bodyDataConfig = {
   'Jupiter': {
     outlines: { url: 'data/jupiter_bands.geojson', type: 'geojson' },
     labels:   { url: 'data/jupiter_labels.json', type: 'labels' }
+  },
+  'Saturn': {
+    outlines: { url: 'data/saturn_bands.geojson', type: 'geojson' },
+    rings:    { url: 'data/saturn_rings.json' },
+    labels:   { url: 'data/saturn_labels.json', type: 'labels' }
   }
 };
 
@@ -736,11 +824,12 @@ async function loadBodyData(bodyName) {
         const hasConType = data.features && data.features.some(f => f.properties && f.properties.ConType);
         const hasJupType = data.features && data.features.some(f => f.properties && f.properties.type && ['boundary','belt_hash','storm','storm_detail','equator'].includes(f.properties.type));
         if (hasJupType) {
-          // Jupiter: render each feature type with its own material
+          // Gas giant bands: use body-specific materials
+          const bandMats = (bodyName === 'Saturn') ? saturnMats : jupiterMats;
           ['boundary','belt_hash','storm','storm_detail','equator'].forEach(ftype => {
             const subset = { type: 'FeatureCollection', features: data.features.filter(f => f.properties && f.properties.type === ftype) };
             if (subset.features.length > 0) {
-              renderFeatures(subset, jupiterMats[ftype] || coastlineMat, GLOBE_R * 1.001);
+              renderFeatures(subset, bandMats[ftype] || coastlineMat, GLOBE_R * 1.001);
             }
           });
           loaded = true;
@@ -789,6 +878,19 @@ async function loadBodyData(bodyName) {
       const labels = await resp.json();
       state.bodyLabels = labels;
     } catch(e) { console.warn('[FDO] Failed to load labels for', bodyName, e); }
+  }
+
+  // Load ring data (Saturn, etc.)
+  clearRingFeatures();
+  if (config.rings) {
+    try {
+      const resp = await fetch(config.rings.url);
+      const ringData = await resp.json();
+      // Detect which material set to use based on body
+      const ringMat = (typeof saturnRingMat !== 'undefined') ? saturnRingMat : coastlineMat;
+      renderRings(ringData, ringMat);
+      loaded = true;
+    } catch(e) { console.warn('[FDO] Failed to load rings for', bodyName, e); }
   }
 
   // If nothing loaded, allow retry on next message
@@ -1190,6 +1292,12 @@ function applyThemeToScene(t) {
   marsContactMats.Approx.color.setHex(t.marsApprox);     marsContactMats.Approx.opacity = t.marsApproxOp;
   marsContactMats.Internal.color.setHex(t.marsInternal);  marsContactMats.Internal.opacity = t.marsInternalOp;
   marsContactMats.Border.color.setHex(t.marsBorder);     marsContactMats.Border.opacity = t.marsBorderOp;
+  // Saturn band materials
+  saturnMats.boundary.color.setHex(t.satBand);   saturnMats.boundary.opacity = t.satBandOp;
+  saturnMats.belt_hash.color.setHex(t.satHash);  saturnMats.belt_hash.opacity = t.satHashOp;
+  saturnMats.storm.color.setHex(t.satStorm);      saturnMats.storm.opacity = t.satStormOp;
+  saturnMats.equator.color.setHex(t.satBand);     saturnMats.equator.opacity = t.satBandOp;
+  saturnRingMat.color.setHex(t.satRing);           saturnRingMat.opacity = t.satRingOp;
   // Jupiter band materials
   jupiterMats.boundary.color.setHex(t.jupBand);   jupiterMats.boundary.opacity = t.jupBandOp;
   jupiterMats.belt_hash.color.setHex(t.jupHash);  jupiterMats.belt_hash.opacity = t.jupHashOp;
