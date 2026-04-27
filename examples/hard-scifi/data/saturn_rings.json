@@ -1,0 +1,58 @@
+[
+  {
+    "name": "D Ring",
+    "innerRadius": 1.11,
+    "outerRadius": 1.2363,
+    "type": "ring",
+    "opacity": 0.15
+  },
+  {
+    "name": "C Ring",
+    "innerRadius": 1.2388,
+    "outerRadius": 1.5265,
+    "type": "ring",
+    "opacity": 0.25
+  },
+  {
+    "name": "B Ring",
+    "innerRadius": 1.5265,
+    "outerRadius": 1.951,
+    "type": "ring",
+    "opacity": 0.5
+  },
+  {
+    "name": "Cassini Division",
+    "innerRadius": 1.951,
+    "outerRadius": 2.0271,
+    "type": "gap",
+    "opacity": 0.0
+  },
+  {
+    "name": "A Ring",
+    "innerRadius": 2.0271,
+    "outerRadius": 2.2694,
+    "type": "ring",
+    "opacity": 0.4
+  },
+  {
+    "name": "Encke Gap",
+    "innerRadius": 2.2166,
+    "outerRadius": 2.222,
+    "type": "gap",
+    "opacity": 0.0
+  },
+  {
+    "name": "Keeler Gap",
+    "innerRadius": 2.2654,
+    "outerRadius": 2.266,
+    "type": "gap",
+    "opacity": 0.0
+  },
+  {
+    "name": "F Ring",
+    "innerRadius": 2.3259,
+    "outerRadius": 2.3342,
+    "type": "ring_thin",
+    "opacity": 0.35
+  }
+]

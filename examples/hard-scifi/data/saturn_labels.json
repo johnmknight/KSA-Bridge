@@ -1,0 +1,87 @@
+[
+  {
+    "name": "SPR",
+    "lon": 0,
+    "lat": -60,
+    "type": "zone"
+  },
+  {
+    "name": "SSTB",
+    "lon": 0,
+    "lat": -50,
+    "type": "belt"
+  },
+  {
+    "name": "SSTZ",
+    "lon": 0,
+    "lat": -42,
+    "type": "zone"
+  },
+  {
+    "name": "STB",
+    "lon": 0,
+    "lat": -34,
+    "type": "belt"
+  },
+  {
+    "name": "STZ",
+    "lon": 0,
+    "lat": -25,
+    "type": "zone"
+  },
+  {
+    "name": "SEB",
+    "lon": 0,
+    "lat": -15,
+    "type": "belt"
+  },
+  {
+    "name": "EZ",
+    "lon": 0,
+    "lat": 0,
+    "type": "zone"
+  },
+  {
+    "name": "NEB",
+    "lon": 0,
+    "lat": 15,
+    "type": "belt"
+  },
+  {
+    "name": "NTZ",
+    "lon": 0,
+    "lat": 25,
+    "type": "zone"
+  },
+  {
+    "name": "NTB",
+    "lon": 0,
+    "lat": 35,
+    "type": "belt"
+  },
+  {
+    "name": "NNTZ",
+    "lon": 0,
+    "lat": 43,
+    "type": "zone"
+  },
+  {
+    "name": "NNTB",
+    "lon": 0,
+    "lat": 51,
+    "type": "belt"
+  },
+  {
+    "name": "NPR",
+    "lon": 0,
+    "lat": 60,
+    "type": "zone"
+  },
+  {
+    "name": "Hexagon",
+    "lon": 0,
+    "lat": 78,
+    "type": "storm",
+    "fullName": "North Polar Hexagon"
+  }
+]
