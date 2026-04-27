@@ -107,58 +107,126 @@ Output: `examples/hard-scifi/data/jupiter_bands.geojson`
 
 ## Moon: Maria and Major Features
 
-**Current Status:** Outline documentation only (data TBD)
+**Source:** USGS Astrogeology + IAU Gazetteer of Planetary Nomenclature
+**Reference URLs:**
+- IAU Gazetteer (USGS-hosted): https://planetarynames.wr.usgs.gov/
+- USGS Astrogeology: https://astrogeology.usgs.gov/
 
-**Potential Sources:**
-- **USGS Astrogeology**: https://astrogeology.usgs.gov/
-  - Lunar Mare Cataloging Project
-  - Lunar Impact Crater Database
-  - LRO Digital Elevation Model and orthophotos
+**Description:**
+Mare boundary outlines and prominent crater rings derived from the IAU
+Gazetteer feature catalog (USGS Astrogeology Science Center). Names follow
+IAU conventions (Mare Imbrium, Mare Tranquillitatis, Mare Serenitatis,
+Tycho, Copernicus, Clavius, etc.).
 
-- **International Astronomical Union**: Lunar Feature Nomenclature
-  - IAU Gazetteer of Planetary Nomenclature
-  - https://planetarynames.wr.usgs.gov/
+**Coordinate System:** Lunar mean radius sphere, lat/lon decimal degrees.
+**Data Format:** TopoJSON (`moon_mare.topojson`, `moon_craters.topojson`)
+plus a labels JSON (`moon_labels.json`) keyed to feature centers.
+**License:** Public Domain (U.S. Government work, USGS/NASA).
 
-- **NASA Lunar Mapping and Modeling**: 
-  - Lunar Orbiter Laser Altimeter (LOLA)
-  - Lunar Reconnaissance Orbiter (LRO) imagery
+**Best-effort attribution.** This is a working data set assembled from
+public-domain sources for educational use. If you spot a feature attributed
+incorrectly or have access to a more authoritative replacement (LRO LOLA-
+derived, for example), please open a PR.
 
-**Planned Implementation:**  
-- Major mare boundaries (Maria Imbrium, Tranquillitatis, Serenitatis, etc.)
-- Crater rings for prominent features (Tycho, Copernicus, Clavius)
-- Elevation data from LRO LOLA
-
----
-
-## Mercury: Crater Rings and Terrain Features
-
-**Current Status:** Outline documentation only (data TBD)
-
-**Potential Sources:**
-- **USGS Astrogeology**: Mercury Crater Database
-- **NASA MESSENGER Mission**: Global imaging and topography (2011–2015)
-- **BepiColombo Mission**: Current high-resolution mapping
-
-**Data to Include:**
-- Major crater rim boundaries
-- Ancient basin structures
-- Terrain type classification (smooth plains, intercrater terrain, etc.)
+**Citation:**
+> Lunar mare boundaries and crater data from the USGS Astrogeology
+> Science Center / IAU Gazetteer of Planetary Nomenclature, public
+> domain. Feature names follow IAU conventions.
 
 ---
 
-## Venus: Surface Features and Topography
+## Mercury: Crater Rings and Named Features
 
-**Current Status:** Outline documentation only (data TBD)
+**Source:** USGS Astrogeology + NASA MESSENGER mission imagery
+**Reference URLs:**
+- IAU Gazetteer (Mercury): https://planetarynames.wr.usgs.gov/Page/MERCURY/target
+- NASA MESSENGER: https://messenger.jhuapl.edu/
 
-**Potential Sources:**
-- **NASA Magellan Mission**: SAR imagery and altimetry (1990–1994)
-- **USGS Astrogeology**: Venus crater and feature databases
-- **Akatsuki (Venus Climate Orbiter)**: Modern atmospheric and surface data
+**Description:**
+Crater rim outlines and named features for Mercury, derived from the IAU
+Gazetteer / USGS Astrogeology Science Center. Imagery underlying the
+gazetteer comes primarily from NASA MESSENGER (2011–2015), with future
+updates expected from the joint ESA/JAXA BepiColombo mission.
 
-**Data to Include:**
-- Major volcanic features (coronae, calderas)
-- Highland/lowland topography
-- Impact crater locations
+**Coordinate System:** Mercury mean radius sphere, lat/lon decimal degrees.
+**Data Format:** TopoJSON (`mercury_craters.topojson`) plus
+`mercury_labels.json`.
+**License:** Public Domain (U.S. Government work, USGS/NASA MESSENGER).
+
+**Best-effort attribution.** PRs welcome if you have higher-resolution
+or more authoritative source data.
+
+**Citation:**
+> Mercury crater data from the USGS Astrogeology Science Center / IAU
+> Gazetteer, derived from NASA MESSENGER mission imagery. Public domain.
+
+---
+
+## Venus: Surface Features (Coronae, Regiones, Dorsa, Craters)
+
+**Source:** USGS Astrogeology + IAU Gazetteer + NASA Magellan SAR mapping
+**Reference URLs:**
+- IAU Gazetteer (Venus): https://planetarynames.wr.usgs.gov/Page/VENUS/target
+- NASA Magellan mission archive: https://nssdc.gsfc.nasa.gov/planetary/magellan.html
+
+**Description:**
+Named Venus features including coronae (e.g. Haumea Corona, Inanna Corona),
+regiones (large highland regions, e.g. Ishkur Regio), dorsa (ridge systems,
+e.g. Kuldurok Dorsa), and impact craters. Underlying imagery and altimetry
+are from the NASA Magellan mission (1990–1994) which mapped ~98% of the
+Venus surface via SAR through the dense atmosphere.
+
+**Coordinate System:** Venus mean radius sphere, lat/lon decimal degrees.
+**Data Format:** TopoJSON (`venus_craters.topojson`) plus
+`venus_labels.json`. Features include diameter and feature-type metadata.
+**License:** Public Domain (U.S. Government work, USGS/NASA Magellan).
+
+**Best-effort attribution.** PRs welcome.
+
+**Citation:**
+> Venus surface features from the USGS Astrogeology Science Center /
+> IAU Gazetteer, derived from NASA Magellan SAR imagery and altimetry.
+> Public domain.
+
+---
+
+## Saturn: Cloud Bands and Ring System
+
+**Source:** Voyager 1/2 and Cassini–Huygens mission data (atmospheric
+bands); standard astronomy references (ring system geometry).
+**Reference URLs:**
+- NASA Cassini archive: https://solarsystem.nasa.gov/missions/cassini/overview/
+- NASA Voyager mission: https://voyager.jpl.nasa.gov/
+- Saturn ring nomenclature: https://en.wikipedia.org/wiki/Rings_of_Saturn (consolidated reference)
+
+**Description:**
+Two layers:
+
+1. **Atmospheric cloud bands** (`saturn_bands.geojson`) — banded
+   structure boundaries derived from Voyager and Cassini cloud-tracking
+   observations and standard zone/belt nomenclature (SPR, SSTB, SSTZ,
+   SEB, NEB, NSTB, NSTZ, NPR, etc.).
+2. **Ring system** (`saturn_rings.json`) — D, C, B, A, F, and G ring
+   inner/outer radii in units of Saturn equatorial radii, with the
+   Cassini Division and Encke Gap as explicit "gap" entries. Standard
+   values from Cassini ring imaging.
+3. **Labels** (`saturn_labels.json`) — band/zone names keyed to
+   centroid lat/lon for rendering.
+
+**Coordinate System:** For bands, planetographic lat/lon on the Saturn
+1-bar pressure level. For rings, radial distance in Saturn radii (R_S).
+**Data Format:** GeoJSON (bands) + JSON (rings, labels).
+**License:** Public Domain (NASA Voyager / Cassini mission data).
+
+**Best-effort attribution.** Current band geometry is a synthesized
+latitude grid using standard zone/belt boundary values; a future pass
+should pull real Voyager/Cassini band-edge measurements with proper
+per-feature attribution. PRs welcome.
+
+**Citation:**
+> Saturn atmospheric bands and ring system geometry derived from
+> NASA Voyager 1/2 and Cassini–Huygens mission data, supplemented by
+> standard astronomy references for ring radii. Public domain.
 
 ---
 
@@ -217,9 +285,10 @@ Rogers (1995) + NASA imagery
 | Mars | Public Domain (USGS) | Recommended | ✅ Yes | ✅ Yes |
 | Earth | Public Domain (Natural Earth) | Recommended | ✅ Yes | ✅ Yes |
 | Jupiter | Public Domain (NASA + Literature) | Recommended | ✅ Yes | ✅ Yes |
-| Moon | Public Domain (USGS/NASA) | TBD | ✅ Yes | ✅ Yes |
-| Mercury | Public Domain (USGS/NASA) | TBD | ✅ Yes | ✅ Yes |
-| Venus | Public Domain (USGS/NASA) | TBD | ✅ Yes | ✅ Yes |
+| Saturn | Public Domain (NASA Voyager/Cassini) | Recommended | ✅ Yes | ✅ Yes |
+| Moon | Public Domain (USGS / IAU) | Recommended | ✅ Yes | ✅ Yes |
+| Mercury | Public Domain (USGS / NASA MESSENGER) | Recommended | ✅ Yes | ✅ Yes |
+| Venus | Public Domain (USGS / NASA Magellan) | Recommended | ✅ Yes | ✅ Yes |
 
 **All data is freely available for educational, research, and commercial use with proper attribution.**
 
@@ -241,6 +310,10 @@ Rogers (1995) + NASA imagery
 > - Mars: USGS SIM 3292 (Tanaka et al., 2014)
 > - Earth: Natural Earth Data
 > - Jupiter: Atmospheric dynamics literature (Rogers, 1995) + NASA mission imagery
+> - Saturn: NASA Voyager 1/2 and Cassini–Huygens mission data
+> - Moon, Mercury, Venus: USGS Astrogeology / IAU Gazetteer of Planetary
+>   Nomenclature, derived from NASA mission imagery (Lunar Reconnaissance
+>   Orbiter, MESSENGER, Magellan respectively).
 
 ---
 

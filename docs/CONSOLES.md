@@ -59,7 +59,9 @@ A faithful recreation of the Apollo-era Flight Dynamics Officer display from NAS
 - Large displays (>1920px): automatic 2-column layout for better use of horizontal space
 - Ultra-wide displays (>2560px): 3-column layout
 
-![Apollo Mission Control Console](/docs/screenshots/apollo-console.png)
+<!-- Screenshot pending. To see this console live, serve examples/ and open
+     http://localhost:8088/apollo-mission-control/apollo-fdo-console.html
+     while a vehicle is loaded in KSA. -->
 
 ---
 
@@ -95,7 +97,9 @@ A modern, visually rich Flight Dynamics Officer console featuring a 3D orbital v
 - Light theme: Orange/green accents for NASA Martian habitat aesthetic
 - Status indicators: Green (nominal), Yellow (caution), Red (alarm)
 
-![Hard Sci-Fi FDO Console](/docs/screenshots/hardscifi-console.png)
+<!-- Screenshot pending. To see this console live, serve examples/ and open
+     http://localhost:8088/hard-scifi/hardscifi-fdo-console.html
+     while a vehicle is loaded in KSA. -->
 
 ---
 

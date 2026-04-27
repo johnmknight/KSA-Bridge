@@ -59,11 +59,6 @@ All dependencies are listed in `package.json` and `KSA-Bridge.csproj`. This sect
   - Purpose: Convert TopoJSON to GeoJSON
   - License: BSD-3-Clause — ✅ Compatible (permissive)
 
-- **d3** — ISC License
-  - npm: `d3`
-  - Used by: Data visualization in consoles (optional)
-  - License: ISC (permissive, similar to MIT) — ✅ Compatible
-
 ### Browser / CDN Dependencies
 
 #### Three.js
@@ -143,7 +138,7 @@ All documentation files (.md, .docx, etc.) are covered under the same MIT licens
 ### Hard Sci-Fi FDO Console
 - **License:** MIT (same as KSA-Bridge)
 - **Location:** `examples/hard-scifi/hardscifi-fdo-console.html`
-- **Dependencies:** Three.js (MIT), mqtt.js (MIT), D3 (ISC), TopoJSON (BSD-3-Clause)
+- **Dependencies:** Three.js (MIT), mqtt.js (MIT), TopoJSON (BSD-3-Clause)
 - **Data:** Planetary data (public domain) + NASA imagery (public domain)
 - ✅ All dependencies compatible; freely distributable
 
@@ -167,7 +162,6 @@ KSA-Bridge (MIT)
     ├── mqtt.js (MIT) ✅
     ├── three.js (MIT) ✅
     ├── topojson-client (BSD-3-Clause) ✅
-    ├── d3 (ISC) ✅
     ├── geopandas (BSD-3-Clause) ✅
     ├── fiona (BSD-3-Clause) ✅
     ├── shapely (BSD-3-Clause) ✅
@@ -183,9 +177,9 @@ No GPL or AGPL dependencies that would restrict commercial use.
 
 ### Academic/Research Citation:
 ```
-Knight, J. M. (2026). KSA-Bridge: Real-time MQTT telemetry bridge for 
-Kitten Space Agency. Version 0.1.0. Available at: 
-https://github.com/[your-org]/KSA-Bridge
+Knight, J. M. (2026). KSA-Bridge: Real-time MQTT telemetry bridge for
+Kitten Space Agency. Version 0.2.0. Available at:
+https://github.com/johnmknight/KSA-Bridge
 ```
 
 ### BibTeX:
@@ -193,9 +187,9 @@ https://github.com/[your-org]/KSA-Bridge
 @software{knight_2026_ksabridge,
   author = {Knight, John M.},
   title = {KSA-Bridge: Real-time {MQTT} telemetry bridge for Kitten Space Agency},
-  version = {0.1.0},
+  version = {0.2.0},
   year = {2026},
-  url = {https://github.com/[your-org]/KSA-Bridge},
+  url = {https://github.com/johnmknight/KSA-Bridge},
   license = {MIT}
 }
 ```
@@ -266,7 +260,7 @@ Submit pull requests with clear license information for any new dependencies or 
 |-----------|---------|--------|
 | KSA-Bridge Core | MIT | ✅ Fully compliant |
 | C# Dependencies | MIT, BSD-3-Clause | ✅ All compatible |
-| JavaScript Dependencies | MIT, ISC, BSD-3-Clause | ✅ All compatible |
+| JavaScript Dependencies | MIT, BSD-3-Clause | ✅ All compatible |
 | Python Scripts | MIT, BSD-3-Clause | ✅ All compatible |
 | Documentation | MIT | ✅ Fully compliant |
 | Planetary Data | Public Domain | ✅ Fully compliant |

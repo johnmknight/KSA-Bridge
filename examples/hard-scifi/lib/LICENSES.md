@@ -1,5 +1,23 @@
 # Third-Party Licenses
 
+> **How these files are maintained.** The `*.min.js` bundles in this directory
+> are vendored copies, refreshed from `node_modules/` via the repo's npm
+> workflow. **Do not edit these files directly.** To update a vendored lib:
+>
+> 1. Bump the version constraint in repo-root `package.json`.
+> 2. From repo root, run `npm install` (refreshes `node_modules/` and
+>    `package-lock.json`).
+> 3. Run `npm run vendor` (executes `scripts/vendor.js`, copies the new
+>    `mqtt.min.js` / `topojson-client.min.js` into both consoles' `lib/`
+>    directories).
+> 4. If a major version changed, update the version line below and verify
+>    the example consoles still load and connect against a running broker.
+> 5. Commit `package.json`, `package-lock.json`, the new `*.min.js` files,
+>    and this `LICENSES.md` together.
+>
+> `three.min.js` (r128) and `land-110m.json` are NOT covered by the npm
+> workflow — they were vendored manually and are maintained by hand.
+
 ## Three.js (r128)
 Source: https://github.com/mrdoob/three.js
 File: three.min.js

@@ -39,20 +39,41 @@ dotnet --version
 
 ### Step 2: Install Mosquitto MQTT Broker
 
-Mosquitto is a lightweight message broker. KSA-Bridge needs it running in the background.
+Mosquitto is a lightweight message broker. KSA-Bridge needs it running in the background, listening on **port 1884 (MQTT)** and **port 9001 (WebSocket)**.
 
-**Option A: Installer (Recommended for beginners)**
+**Option A: Installer (recommended for beginners)**
 1. Download from [mosquitto.org/download](https://mosquitto.org/download/)
 2. Choose "Windows" → download the `.exe` installer
 3. Run installer, accept defaults (installs to `C:\Program Files\Mosquitto\`)
-4. Choose "Install as Windows Service" during setup (lets it auto-start)
+4. **Skip "Install as Windows Service"** if the option appears, OR install it but be aware of the service-vs-manual conflict described below.
 
-**Option B: Quick Check (Already Installed?)**
+**Option B: Quick check (already installed?)**
 Open PowerShell:
 ```powershell
 Get-Process mosquitto -ErrorAction SilentlyContinue
 ```
-If you see `mosquitto` in the output, it's already running. Skip to **Step 3**.
+If you see `mosquitto` in the output, it's already running. Continue to the service note below before Step 3.
+
+#### Important: Service-vs-manual conflict
+
+If you installed Mosquitto with the "Install as Windows Service" option (or via Chocolatey, which does this automatically), Mosquitto will already be running as an auto-start service using its **default config**. The default config has no listener directives, so it falls back to **port 1883** — not the 1884 / 9001 that KSA-Bridge needs.
+
+You'll see this as: `setup.bat` reports "Mosquitto is running" (true), but the broker still isn't on 1884 (also true), and KSA-Bridge can't connect.
+
+**Fix (choose one):**
+
+- **Easiest — disable the service, run manually:** open an **elevated** PowerShell and run:
+  ```powershell
+  Stop-Service mosquitto
+  Set-Service mosquitto -StartupType Manual
+  ```
+  Then `setup.bat` and `scripts\restart-mosquitto.bat` will work as designed (they start mosquitto manually with `-c config\mosquitto.conf`, which sets up 1884 + 9001).
+
+- **Alternative — let both run side by side:** start a second mosquitto manually with the KSA-Bridge config. The service stays on 1883 (harmless background), and the manual instance handles 1884 / 9001 for KSA-Bridge. Use `scripts\restart-mosquitto.bat` to (re)start the manual instance whenever needed.
+
+- **Persistent — point the service at the KSA-Bridge config:** edit the service binPath to include `-c "C:\path\to\KSA-Bridge\config\mosquitto.conf"`. Service auto-starts on the right ports going forward, but you lose the default 1883 listener.
+
+The first approach is cleanest for development. The second is fine if you have other things on 1883 you don't want to disturb.
 
 ### Step 3: Build and Deploy
 
@@ -83,10 +104,18 @@ If `setup.bat` fails:
 Start-Process "C:\Program Files\Mosquitto\mosquitto.exe" -ArgumentList "-c config\mosquitto.conf"
 ```
 
-**Launch KSA:**
+**Launch KSA — important:** the launcher MUST be run from `C:\Program Files\StarMap\`, not from a copy elsewhere. `StarMap.Loader.exe` inherits its working directory from the launcher, and it expects that working directory to be its own install dir for mod loading and other relative-path operations to resolve correctly. If you run the launcher from another folder (or double-click the repo's `scripts\launch-starmap.bat`), StarMap still launches but starts in the wrong working directory, mods may not load, and **telemetry will not flow even though everything else looks fine**.
+
+The repo ships a copy of `launch-starmap.bat` at `scripts\launch-starmap.bat` for reference, but the **canonical run location** is `C:\Program Files\StarMap\launch-starmap.bat`. The `setup.bat` script deploys the repo copy to that location during install (overwriting any existing one), so the StarMap-dir copy stays in sync with the repo.
+
+Run it from there:
 ```
 C:\Program Files\StarMap\launch-starmap.bat
 ```
+
+Or double-click that file in Explorer. Either way works because the `start "" "C:\Program Files\StarMap\StarMap.Loader.exe"` line then inherits that directory as its CWD.
+
+> **Note on StarMap 0.4.5+ entry points:** the bat invokes `StarMap.Loader.exe` directly, not `StarMap.exe`. In 0.4.5, `StarMap.exe` is a new "Launcher" stub that prints `Currently WIP, please use the standalone version or launch 'StarMap.Loader.exe'` and exits immediately. The Loader is the actual mod-loading process. If a future StarMap update changes the entry point again, update `scripts/launch-starmap.bat` accordingly and rerun `setup.bat` to redeploy.
 
 **Verify in game logs** (Check `Documents\My Games\Kitten Space Agency\logs\`):
 ```
@@ -259,6 +288,49 @@ ls ~/.local/share/"Kitten Space Agency"/mods/KSA-Bridge/KSA-Bridge.dll 2>/dev/nu
 ```
 
 All three should show green/success.
+
+---
+
+## Day-to-Day Workflow (After First Install)
+
+Once you've completed the one-time install above and verified telemetry is flowing, the project ships a small set of canonical scripts for normal day-to-day use. **Use these scripts directly — don't re-implement their logic in ad-hoc commands.** They encode the working assumptions about paths, ports, working directories, and ordering.
+
+### The canonical scripts
+
+| Script | What it does | When to run |
+|--------|--------------|-------------|
+| `build-and-deploy.bat` (repo root) | Builds the mod (Debug config), rotates DLL backups (keeps 5 timestamped copies under `mods\KSA-Bridge\backups\`), and deploys to your KSA mods directory. | Every time you change the mod's C# code. |
+| `setup.bat` (repo root) | First-time setup: verifies .NET + Mosquitto, builds **Release**, deploys. Use the first time, or after a clean checkout. | Initial install only. |
+| `scripts\restart-mosquitto.bat` | `taskkill` the running mosquitto, then `start mosquitto.exe -c config\mosquitto.conf` so the broker comes up on 1884 + 9001 with the project's listeners. | Whenever you've changed `config\mosquitto.conf`, or if the broker has died, or after a reboot if you went with the "run manually" option above. |
+| `scripts\serve-examples.bat` | `python -m http.server 8088` from `examples\`, so the FDO consoles are reachable at `http://localhost:8088/...`. | Once per session — leave it running. |
+| `C:\Program Files\StarMap\launch-starmap.bat` | Pause + launch `StarMap.Loader.exe` (the actual loader; `StarMap.exe` is a WIP stub in 0.4.5+). **Must be run from the StarMap install dir** so the game inherits the correct working directory for mod loading. The repo's `scripts\launch-starmap.bat` is a reference copy; `setup.bat` deploys it into `C:\Program Files\StarMap\` for you. **Run the deployed copy, not the repo copy.** | Whenever you want the game up. |
+
+### Typical iterative session
+
+```text
+1. (already done from initial setup) ─ scripts\restart-mosquitto.bat
+2. (already done from initial setup) ─ scripts\serve-examples.bat
+3. Edit C# code in KSA-Bridge\
+4. build-and-deploy.bat                ← rebuild + deploy with backup
+5. "C:\Program Files\StarMap\launch-starmap.bat"   ← run the game (NOT the repo copy)
+6. Confirm "[KSA-Bridge] Connected to 127.0.0.1:1884" in the KSA log
+7. Open or refresh the FDO console in your browser
+8. Make next change → goto 4
+```
+
+### Where things live
+
+- **Mod build output:** `KSA-Bridge\bin\Debug\net10.0\` (from `build-and-deploy.bat`) or `bin\Release\net10.0\` (from `setup.bat`)
+- **Deployed mod:** `%USERPROFILE%\OneDrive\Documents\My Games\Kitten Space Agency\mods\KSA-Bridge\` on Windows 11 with OneDrive Documents redirection (default), or `%USERPROFILE%\Documents\My Games\Kitten Space Agency\mods\KSA-Bridge\` without OneDrive.
+- **Deployed-DLL backups (rotated):** `<mods dir>\KSA-Bridge\backups\<timestamp>\`
+- **Mosquitto config used by the project:** `config\mosquitto.conf` (NOT the default `C:\Program Files\Mosquitto\mosquitto.conf`)
+- **KSA logs:** `Documents\My Games\Kitten Space Agency\logs\` — tail the most recent file to watch for `[KSA-Bridge]` lines.
+
+### Stopping cleanly
+
+- **Web server:** find the process (port 8088) and stop it: `Get-Process | Where-Object {$_.Path -like '*python*'}` then `Stop-Process -Id <pid>`. Or just close the cmd window if it's foregrounded.
+- **Mosquitto (manual):** `taskkill /IM mosquitto.exe /F` (only kills the manual instance if you also stopped the service per the "service-vs-manual" note above; otherwise the service will still be on 1883).
+- **KSA:** quit normally from the in-game menu.
 
 ---
 
