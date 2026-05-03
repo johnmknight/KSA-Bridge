@@ -75,11 +75,16 @@ public class BridgeUi
             var color  = _state.Connected ? _colorGreen : _colorRed;
             var symbol = _state.Connected ? "●" : "○";
             var status = _state.Connected ? "Connected" : "Disconnected";
+            var lastError = _state.LastError;
             
             ImGui.TextColored(color, $"{symbol} {status}");
             ImGui.Text($"Port: {_config.BrokerPort}");
             ImGui.Text($"Telemetry: {_config.TelemetryHz}Hz");
-            
+            if (!string.IsNullOrWhiteSpace(lastError))
+            {
+                ImGui.Text($"Error: {lastError}");
+            }
+
             // Click hint
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Press Ctrl+B for debug panel");
@@ -129,10 +134,17 @@ public class BridgeUi
         
         ImGui.Text($"Host: {_config.BrokerHost}");
         ImGui.Text($"Port: {_config.BrokerPort}");
+        var tlsSymbol = _config.Tls ? "●" : "○";
+        ImGui.TextColored(_config.Tls ? _colorGreen : _colorRed, $"TLS: {tlsSymbol}");
         
         var color = _state.Connected ? _colorGreen : _colorRed;
         var status = _state.Connected ? "Connected" : "Disconnected";
         ImGui.TextColored(color, $"Status: {status}");
+
+        if (!string.IsNullOrWhiteSpace(_state.LastError))
+        {
+            ImGui.TextColored(color, $"Error: {_state.LastError}");
+        }
         
         if (_state.Connected && _state.LastPublishTime != DateTime.MinValue)
         {

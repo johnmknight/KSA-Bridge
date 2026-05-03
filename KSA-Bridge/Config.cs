@@ -1,17 +1,20 @@
-using System;
-using System.IO;
 using Tomlyn;
 using Tomlyn.Model;
+using static KSABridge.BridgeLog;
 
 namespace KSABridge;
 
 public class BridgeConfig
 {
     // ── Broker ────────────────────────────────────────────────────
-    public string BrokerHost    { get; set; } = "192.168.4.51";
-    public int    BrokerPort    { get; set; } = 1883;
-    public string ClientId      { get; set; } = "ksa-bridge";
-    public int    KeepAlive     { get; set; } = 60;
+    public string  BrokerHost     { get; set; } = "192.168.4.51";
+    public int     BrokerPort     { get; set; } = 1883;
+    public string  ClientId       { get; set; } = "ksa-bridge";
+    public bool    Tls            { get; set; }
+    public bool    AllowUntrusted { get; set; }
+    public string? Username       { get; set; }
+    public string? Password       { get; set; }
+    public int     KeepAlive      { get; set; } = 60;
 
     // ── Publish rates ─────────────────────────────────────────────
     public string TopicPrefix            { get; set; } = "ksa";
@@ -58,10 +61,16 @@ public class BridgeConfig
             // [broker]
             if (model.TryGetValue("broker", out var brokerRaw) && brokerRaw is TomlTable broker)
             {
-                cfg.BrokerHost  = GetString(broker,  "host",      cfg.BrokerHost);
-                cfg.BrokerPort  = GetInt(broker,     "port",      cfg.BrokerPort);
-                cfg.ClientId    = GetString(broker,  "client_id", cfg.ClientId);
-                cfg.KeepAlive   = GetInt(broker,     "keepalive", cfg.KeepAlive);
+                cfg.BrokerHost     = GetString(broker,  "host",      cfg.BrokerHost);
+                cfg.BrokerPort     = GetInt(broker,     "port",      cfg.BrokerPort);
+                cfg.ClientId       = GetString(broker,  "client_id", cfg.ClientId);
+                cfg.KeepAlive      = GetInt(broker,     "keepalive", cfg.KeepAlive);
+                cfg.Username       = GetString(broker,  "username", cfg.Username);
+                cfg.Password       = GetString(broker,  "password", cfg.Password);
+                cfg.Tls            = GetBool(broker,    "tls",             cfg.Tls);
+                cfg.AllowUntrusted = GetBool(broker,    "allow_untrusted", cfg.AllowUntrusted);
+                
+                Log.Info($"[KSA-Bridge] Broker at {cfg.BrokerHost}:{cfg.BrokerPort}. TLS is {cfg.Tls}");
             }
 
             // [publish]
@@ -98,6 +107,8 @@ public class BridgeConfig
         {
             Console.WriteLine($"[KSA-Bridge] Config parse error — using defaults. ({ex.Message})");
         }
+        
+        Log.Info($"[KSA-Bridge] Config loaded from {path}");
 
         return cfg;
     }
