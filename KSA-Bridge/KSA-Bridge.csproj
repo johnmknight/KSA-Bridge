@@ -16,6 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="StarMap.API" Version="0.3.6" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
     <!-- TOML config reader -->
     <PackageReference Include="Tomlyn" Version="0.17.*">
@@ -70,6 +71,10 @@
     </Reference>
     <Reference Include="Brutal.Glfw">
       <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Glfw.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Brutal.Core.Logging">
+      <HintPath>C:\Program Files\Kitten Space Agency\Brutal.Core.Logging.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <!-- UI string types for ImGui -->
