@@ -2,6 +2,33 @@
 
 All notable changes to this project. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions; versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-08-14
+
+Compatibility pass for the August 2026 game builds.
+
+### Compatibility
+
+- **KSA:** version 2026.8.19.5261 — mod loads, heartbeats, and unloads cleanly; in-flight
+  telemetry verification on this build still pending (only menu-level run so far).
+- **StarMap loader:** 0.4.6 — the launcher/loader split is gone; a single `StarMap.exe`
+  now lives in `C:\Program Files\StarMap\`. The attribute-based mod API is unchanged, so
+  no entry-point changes were needed. NOTE: `scripts\launch-starmap.bat` references the
+  removed `StarMap.Loader.exe` and needs updating.
+
+### Changed
+
+- **KSA 2026.8.x API migration** in `TelemetryPublisher.cs` (replacements verified by
+  reflecting over the new `KSA.dll`, not guessed):
+  - `NavBallData.DeltaVInVacuum` → `NavBallData.DeltaV`
+  - `Vehicle.LastKinematicStates.Situation` → `Vehicle.Situation`
+  - atmosphere topic now reads `Vehicle.PhysicsEnvironment` (density/pressure/ocean/terrain)
+    and `Vehicle.Props` (surface area, volume, draft) — the old `LastKinematicStates`
+    struct was split by the game.
+  - **BREAKING (topic schema):** `ksa/telemetry/dynamics` field `propellantMassFlowRate`
+    replaced by `propellantMass` (total kg aboard). The game removed the vehicle-level
+    flow-rate aggregate (now per-nozzle on `ActiveNozzle`); no known consumer used the
+    old field.
+
 ## [0.2.0] — 2026-04-27
 
 First substantive release after the initial 0.1.0 scaffolding. Targets KSA r4184 (game version 2026.4.17.4184) and StarMap 0.4.5.
