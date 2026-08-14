@@ -324,6 +324,19 @@ const darkScene = {
   marsApprox: 0x8B5E2B, marsApproxOp: 0.35,
   marsInternal: 0x5A8A7A, marsInternalOp: 0.40,
   marsBorder: 0xFFAA44, marsBorderOp: 0.70,
+  // Landmark layer (curated point markers + text sprites). Used by any
+  // body whose bodyDataConfig.labels.render === 'markers+text' (Luna so
+  // far). Bright dot + readable name; intentionally low feature count.
+  landmark: 0xE8F0FF, landmarkOp: 0.85,
+  landmarkText: 0xCFE0F8, landmarkTextOp: 0.85,
+  // Moon UGM (Fortezzo et al. 2020) geologic contacts, colour-coded by
+  // ConType. Cool tones (vs Mars's warm tones) so the eye reads "moon"
+  // by palette alone. Same classify-and-colour pattern as marsContactMats.
+  moonCertain:  0xB8C8DC, moonCertainOp:  0.55,
+  moonApprox:   0x6A7886, moonApproxOp:   0.32,
+  moonInternal: 0x4A6080, moonInternalOp: 0.40,
+  moonBuried:   0x705065, moonBuriedOp:   0.30,
+  moonInferred: 0x9A7858, moonInferredOp: 0.30,
   jupBand: 0xC4956A, jupBandOp: 0.50,
   jupHash: 0x8B6B4A, jupHashOp: 0.25,
   jupStorm: 0xCC5533, jupStormOp: 0.65,
@@ -347,6 +360,13 @@ const lightScene = {
   marsApprox: 0x7A4E1B, marsApproxOp: 0.40,
   marsInternal: 0x4A7A6A, marsInternalOp: 0.45,
   marsBorder: 0xDD8822, marsBorderOp: 0.75,
+  landmark: 0x103060, landmarkOp: 0.90,
+  landmarkText: 0x204878, landmarkTextOp: 0.90,
+  moonCertain:  0x405568, moonCertainOp:  0.65,
+  moonApprox:   0x8090A0, moonApproxOp:   0.45,
+  moonInternal: 0x205070, moonInternalOp: 0.50,
+  moonBuried:   0x655060, moonBuriedOp:   0.45,
+  moonInferred: 0x886B48, moonInferredOp: 0.45,
   jupBand: 0xA07850, jupBandOp: 0.55,
   jupHash: 0x7A5A3A, jupHashOp: 0.30,
   jupStorm: 0xAA4422, jupStormOp: 0.70,
@@ -606,6 +626,22 @@ const marsContactMats = {
   Internal: new THREE.LineBasicMaterial({ color: currentThemeColors.marsInternal, transparent: true, opacity: currentThemeColors.marsInternalOp, depthWrite: false }),
   Border:   new THREE.LineBasicMaterial({ color: currentThemeColors.marsBorder,   transparent: true, opacity: currentThemeColors.marsBorderOp,   depthWrite: false })
 };
+// Curated landmark marker (small bright dot at lat/lon). Theme-aware.
+// Used by the `labels` rendering path when render === 'markers+text'.
+const landmarkMat = new THREE.MeshBasicMaterial({
+  color: currentThemeColors.landmark, transparent: true, opacity: currentThemeColors.landmarkOp, depthWrite: false
+});
+// Moon UGM 2020 geologic contact materials, keyed by ConType (USGS
+// Fortezzo / Spudis / Harrel classification: certain / approximate /
+// internal / buried / inferred unit boundaries). Parallel structure to
+// marsContactMats; the renderer picks one or the other by bodyName.
+const moonContactMats = {
+  Certain:  new THREE.LineBasicMaterial({ color: currentThemeColors.moonCertain,  transparent: true, opacity: currentThemeColors.moonCertainOp,  depthWrite: false }),
+  Approx:   new THREE.LineBasicMaterial({ color: currentThemeColors.moonApprox,   transparent: true, opacity: currentThemeColors.moonApproxOp,   depthWrite: false }),
+  Internal: new THREE.LineBasicMaterial({ color: currentThemeColors.moonInternal, transparent: true, opacity: currentThemeColors.moonInternalOp, depthWrite: false }),
+  Buried:   new THREE.LineBasicMaterial({ color: currentThemeColors.moonBuried,   transparent: true, opacity: currentThemeColors.moonBuriedOp,   depthWrite: false }),
+  Inferred: new THREE.LineBasicMaterial({ color: currentThemeColors.moonInferred, transparent: true, opacity: currentThemeColors.moonInferredOp, depthWrite: false })
+};
 // Jupiter band materials (by feature type)
 const jupiterMats = {
   boundary: new THREE.LineBasicMaterial({ color: currentThemeColors.jupBand,  transparent: true, opacity: currentThemeColors.jupBandOp,  depthWrite: false }),
@@ -687,6 +723,101 @@ function clearRingFeatures() {
   });
   ringFeatures = [];
 }
+
+// ── LANDMARK / LABEL RENDERING ──────────────────────────────
+// Generic per-body landmark layer. Driven by bodyDataConfig.labels
+// when render === 'markers+text'. Currently used by Luna; designed
+// so any other body can opt in by adding the same config block.
+//
+// Each landmark gets a small marker mesh (a sphere near the surface)
+// and a text sprite (canvas-rendered name) positioned just above it.
+// Both are added to earthGroup so they rotate with the body.
+let labelFeatures = []; // markers + sprites tracked together for cleanup
+function clearLabelFeatures() {
+  labelFeatures.forEach(obj => {
+    earthGroup.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+      if (obj.material.map) obj.material.map.dispose();
+      obj.material.dispose();
+    }
+  });
+  labelFeatures = [];
+}
+
+// Build a Sprite whose texture is canvas-rendered text. Used for
+// landmark name labels. Sized in world units (GLOBE_R-relative) so the
+// label scales naturally with the visualisation scale, not the actual
+// body radius.
+function makeLabelSprite(text, cssColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 40px "Space Mono", "Courier New", monospace';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = cssColor;
+  // Subtle dark outline for readability over both bright and dark globes
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = 4;
+  ctx.strokeText(text, 6, 48);
+  ctx.fillText(text, 6, 48);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthWrite: false, opacity: 0.9, depthTest: true
+  });
+  const sprite = new THREE.Sprite(mat);
+  // World-space scale: ~0.18 of GLOBE_R wide, aspect-correct (~5.3:1)
+  sprite.scale.set(GLOBE_R * 0.18, GLOBE_R * 0.034, 1);
+  return sprite;
+}
+
+// Convert THREE color hex (number) to '#RRGGBB' for CSS / canvas use.
+function hexToCssColor(h) {
+  return '#' + h.toString(16).padStart(6, '0');
+}
+
+// Render a curated subset of a body's labels as marker dots + text.
+// `opts` ↔ bodyDataConfig.labels: { typeFilter, sortBy, maxCount }
+function renderLabels(labels, opts) {
+  if (!Array.isArray(labels) || labels.length === 0) return false;
+  let filtered = labels;
+  if (opts.typeFilter && opts.typeFilter.length) {
+    const allowed = new Set(opts.typeFilter);
+    filtered = filtered.filter(l => allowed.has(l.type));
+  }
+  if (opts.sortBy) {
+    filtered = filtered.slice().sort((a, b) =>
+      (b[opts.sortBy] || 0) - (a[opts.sortBy] || 0));
+  }
+  if (opts.maxCount) {
+    filtered = filtered.slice(0, opts.maxCount);
+  }
+  if (filtered.length === 0) return false;
+
+  const dotR    = GLOBE_R * 0.012;
+  const surfR   = GLOBE_R * 1.005;
+  const textR   = GLOBE_R * 1.06;
+  const cssText = hexToCssColor(currentThemeColors.landmarkText);
+  const dotGeoCache = new THREE.SphereGeometry(dotR, 10, 10);
+
+  filtered.forEach(label => {
+    const lat = label.lat, lon = label.lon;
+    if (typeof lat !== 'number' || typeof lon !== 'number') return;
+    // Marker dot at the body's surface level
+    const marker = new THREE.Mesh(dotGeoCache, landmarkMat);
+    marker.position.copy(latLonToVec3(lat, lon, surfR));
+    earthGroup.add(marker);
+    labelFeatures.push(marker);
+    // Text sprite slightly above the surface so it doesn't z-fight the dot
+    const sprite = makeLabelSprite(label.name, cssText);
+    sprite.position.copy(latLonToVec3(lat, lon, textR));
+    earthGroup.add(sprite);
+    labelFeatures.push(sprite);
+  });
+  return true;
+}
 function renderRings(ringData, material) {
   const N = 128;  // points per ring circle
   ringData.forEach(ring => {
@@ -735,13 +866,23 @@ const bodyDataConfig = {
   'Earth': {
     outlines: { url: 'https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json', type: 'topojson', objectKey: 'land' }
   },
-  // KSA reports Earth's moon as "Luna"; data files use the USGS/IAU
-  // English convention "moon_*" — those stay as the data source's
-  // canonical naming. Dict key matches what the bridge actually emits.
+  // KSA reports Earth's moon as "Luna". Surface data is the USGS
+  // Unified Geologic Map of the Moon (Fortezzo, Spudis, Harrel, 2020)
+  // with the same colour-by-ConType pattern as Mars (USGS SIM 3292) —
+  // see scripts/data-gen/convert_moon.py for the pipeline. We keep
+  // the IAU labels layer on top so iconic features (Mare Imbrium,
+  // Tranquillitatis, Apollo, Korolev, etc.) are named.
   'Luna': {
-    outlines: { url: 'data/moon_mare.topojson', type: 'topojson' },
-    craters: { url: 'data/moon_craters.topojson', type: 'topojson' },
-    labels:  { url: 'data/moon_labels.json', type: 'labels' }
+    outlines: { url: 'data/moon_geologic.geojson', type: 'geojson' },
+    labels: {
+      url: 'data/moon_labels.json',
+      type: 'labels',
+      render: 'markers+text',
+      maxCount: 15,
+      sortBy: 'diameter',
+      typeFilter: ['Mare, maria', 'Oceanus, oceani', 'Sinus, sinūs',
+                   'Lacus, lacūs', 'Crater, craters', 'Vallis, valles']
+    }
   },
   'Mars': {
     outlines: { url: 'data/mars_contacts.geojson', type: 'geojson' },
@@ -785,9 +926,10 @@ function ensureTopojsonClient() {
 }
 
 async function loadBodyData(bodyName) {
-  if (bodyName === currentBodyName && surfaceFeatures.length > 0) return;
+  if (bodyName === currentBodyName && (surfaceFeatures.length > 0 || labelFeatures.length > 0)) return;
   currentBodyName = bodyName;
   clearSurfaceFeatures();
+  clearLabelFeatures();
   logEvent('BODY: ' + bodyName);
   setAtmosphereForBody(bodyName);
 
@@ -820,7 +962,11 @@ async function loadBodyData(bodyName) {
       if (config.outlines.type === 'topojson') {
         const objectKey = config.outlines.objectKey || Object.keys(data.objects)[0];
         const geojson = topojson.feature(data, data.objects[objectKey]);
-        renderFeatures(geojson, coastlineMat, GLOBE_R * 1.001);
+        // Pick the Luna context-layer material when configured; default
+        // is the cyan coastline material (Earth and any other body that
+        // doesn't explicitly opt into a different look).
+        const outlineMat = (config.outlines.material === 'lunaMare') ? lunaMats.mare : coastlineMat;
+        renderFeatures(geojson, outlineMat, GLOBE_R * 1.001);
         loaded = true;
       } else {
         // Check if data has typed features (Mars ConType or Jupiter band types)
@@ -837,15 +983,19 @@ async function loadBodyData(bodyName) {
           });
           loaded = true;
         } else if (hasConType) {
-          // Render each ConType with its own material
-          Object.keys(marsContactMats).forEach(conType => {
+          // Color-code geologic contacts by ConType. Mars and Luna both
+          // emit ConType (Mars from USGS SIM 3292, Luna from USGS UGM
+          // 2020); pick the body-specific material set so each planet
+          // renders in its own palette.
+          const contactMats = (bodyName === 'Luna') ? moonContactMats : marsContactMats;
+          Object.keys(contactMats).forEach(conType => {
             const subset = { type: 'FeatureCollection', features: data.features.filter(f => f.properties && f.properties.ConType === conType) };
             if (subset.features.length > 0) {
-              renderFeatures(subset, marsContactMats[conType], GLOBE_R * 1.001);
+              renderFeatures(subset, contactMats[conType], GLOBE_R * 1.001);
             }
           });
           // Any features with unknown ConType get default coastline material
-          const unknown = { type: 'FeatureCollection', features: data.features.filter(f => !f.properties || !f.properties.ConType || !marsContactMats[f.properties.ConType]) };
+          const unknown = { type: 'FeatureCollection', features: data.features.filter(f => !f.properties || !f.properties.ConType || !contactMats[f.properties.ConType]) };
           if (unknown.features.length > 0) {
             renderFeatures(unknown, coastlineMat, GLOBE_R * 1.001);
           }
@@ -857,29 +1007,66 @@ async function loadBodyData(bodyName) {
     } catch(e) { console.warn('[FDO] Failed to load outlines for', bodyName, e); }
   }
 
-  // Load crater/feature ring data
+  // Load crater/feature ring data. Bodies opt in via bodyDataConfig.
+  // craters; for Luna we point at moon_craters.topojson + a top-N
+  // filter (otherwise 110 rings overwhelm the disk). The same generic
+  // {maxCount, sortBy} mechanism can be reused by any other body.
   if (config.craters) {
     try {
       const resp = await fetch(config.craters.url);
       const data = await resp.json();
+      const cMat = (config.craters.material === 'lunaCrater') ? lunaMats.crater : craterMat;
+
+      // Filter helper: keep only the top N features by some numeric
+      // property in feature.properties (e.g. 'diameter'). When config
+      // doesn't ask for filtering, returns the array unchanged.
+      const applyTopN = (featuresArr) => {
+        if (!config.craters.maxCount || !config.craters.sortBy) return featuresArr;
+        const key = config.craters.sortBy;
+        return featuresArr
+          .slice()
+          .sort((a, b) => ((b.properties && b.properties[key]) || 0) - ((a.properties && a.properties[key]) || 0))
+          .slice(0, config.craters.maxCount);
+      };
+
       if (config.craters.type === 'topojson') {
         const objectKey = Object.keys(data.objects)[0];
         const geojson = topojson.feature(data, data.objects[objectKey]);
-        renderFeatures(geojson, craterMat, GLOBE_R * 1.001);
+        if (geojson.type === 'FeatureCollection') {
+          renderFeatures({ type: 'FeatureCollection', features: applyTopN(geojson.features) }, cMat, GLOBE_R * 1.001);
+        } else {
+          renderFeatures(geojson, cMat, GLOBE_R * 1.001);
+        }
         loaded = true;
       } else {
-        renderFeatures(data, craterMat, GLOBE_R * 1.001);
+        if (data.features) {
+          renderFeatures({ type: 'FeatureCollection', features: applyTopN(data.features) }, cMat, GLOBE_R * 1.001);
+        } else {
+          renderFeatures(data, cMat, GLOBE_R * 1.001);
+        }
         loaded = true;
       }
     } catch(e) { console.warn('[FDO] Failed to load craters for', bodyName, e); }
   }
 
-  // Load named feature labels
+  // Load named feature labels.
+  // Default behaviour: stash in state.bodyLabels for any UI panel that
+  // wants to consume them (e.g. a future "nearest landmark" readout).
+  // Opt-in: if config.labels.render === 'markers+text', also render
+  // them as marker dots + text sprites on the globe (Luna landmarks).
   if (config.labels) {
     try {
       const resp = await fetch(config.labels.url);
       const labels = await resp.json();
       state.bodyLabels = labels;
+      if (config.labels.render === 'markers+text') {
+        const ok = renderLabels(labels, {
+          typeFilter: config.labels.typeFilter,
+          sortBy: config.labels.sortBy,
+          maxCount: config.labels.maxCount
+        });
+        if (ok) loaded = true;
+      }
     } catch(e) { console.warn('[FDO] Failed to load labels for', bodyName, e); }
   }
 
@@ -1295,6 +1482,17 @@ function applyThemeToScene(t) {
   marsContactMats.Approx.color.setHex(t.marsApprox);     marsContactMats.Approx.opacity = t.marsApproxOp;
   marsContactMats.Internal.color.setHex(t.marsInternal);  marsContactMats.Internal.opacity = t.marsInternalOp;
   marsContactMats.Border.color.setHex(t.marsBorder);     marsContactMats.Border.opacity = t.marsBorderOp;
+  // Landmark layer (point markers + text sprites). Sprite text colour
+  // is baked into the canvas at sprite-creation time, so a theme switch
+  // mid-flight only restyles dot markers; sprites refresh on next body
+  // load. That trade-off keeps the renderer simple.
+  landmarkMat.color.setHex(t.landmark);  landmarkMat.opacity = t.landmarkOp;
+  // Moon UGM 2020 geologic contact materials, by ConType
+  moonContactMats.Certain.color.setHex(t.moonCertain);   moonContactMats.Certain.opacity = t.moonCertainOp;
+  moonContactMats.Approx.color.setHex(t.moonApprox);     moonContactMats.Approx.opacity = t.moonApproxOp;
+  moonContactMats.Internal.color.setHex(t.moonInternal); moonContactMats.Internal.opacity = t.moonInternalOp;
+  moonContactMats.Buried.color.setHex(t.moonBuried);     moonContactMats.Buried.opacity = t.moonBuriedOp;
+  moonContactMats.Inferred.color.setHex(t.moonInferred); moonContactMats.Inferred.opacity = t.moonInferredOp;
   // Saturn band materials
   saturnMats.boundary.color.setHex(t.satBand);   saturnMats.boundary.opacity = t.satBandOp;
   saturnMats.belt_hash.color.setHex(t.satHash);  saturnMats.belt_hash.opacity = t.satHashOp;

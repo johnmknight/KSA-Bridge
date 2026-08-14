@@ -47,6 +47,15 @@ embed_coastlines.js
 voices/
 models/
 
+## Raw USGS shapefile downloads (used by scripts/data-gen/convert_*.py
+## as the source-of-truth input for generating the simplified GeoJSON
+## files we DO commit, e.g. mars_contacts.geojson and the planned
+## moon_geologic.geojson). The raw bundles are large (Mars SIM 3292 is
+## ~32 MB; lunar UGM 2020 is ~214 MB) and reproducible from the URLs in
+## DATA_SOURCES.md, so we keep them out of the repo.
+examples/hard-scifi/data/usgs_raw/
+**/usgs_raw/
+
 ## OS metadata
 .DS_Store
 Thumbs.db

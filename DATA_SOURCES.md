@@ -105,33 +105,85 @@ Output: `examples/hard-scifi/data/jupiter_bands.geojson`
 
 ---
 
-## Moon: Maria and Major Features
+## Moon: Geologic Contact Boundaries (UGM 2020)
 
-**Source:** USGS Astrogeology + IAU Gazetteer of Planetary Nomenclature
-**Reference URLs:**
-- IAU Gazetteer (USGS-hosted): https://planetarynames.wr.usgs.gov/
-- USGS Astrogeology: https://astrogeology.usgs.gov/
+**Source:** USGS Unified Geologic Map of the Moon, v2 (2020)
+**Reference:** Fortezzo, C.M., Spudis, P.D., and Harrel, S.L. (2020).
+**Publication:** USGS, prepared for NASA. Based on six previously digitised
+1:5,000,000-scale lunar geologic map sheets, unified into a single
+seamless global product.
+**URL:** https://astrogeology.usgs.gov/search/map/unified_geologic_map_of_the_moon_1_5m_2020
+**Direct GIS download:** https://asc-astropedia.s3.us-west-2.amazonaws.com/Moon/Geology/Unified_Geologic_Map_of_the_Moon_GIS_v2.zip
 
 **Description:**
-Mare boundary outlines and prominent crater rings derived from the IAU
-Gazetteer feature catalog (USGS Astrogeology Science Center). Names follow
-IAU conventions (Mare Imbrium, Mare Tranquillitatis, Mare Serenitatis,
-Tycho, Copernicus, Clavius, etc.).
+Global geologic unit contact lines for the Moon at 1:5M scale, derived
+from the unified hand-mapped lunar geologic map. Each contact carries a
+`ContactTyp` classification:
 
-**Coordinate System:** Lunar mean radius sphere, lat/lon decimal degrees.
-**Data Format:** TopoJSON (`moon_mare.topojson`, `moon_craters.topojson`)
-plus a labels JSON (`moon_labels.json`) keyed to feature centers.
+- **Certain** — well-defined unit boundary (rendered as the brightest line)
+- **Approximate** — boundary with lower confidence (dimmer)
+- **Internal** — boundary within a unit
+- **Buried** — boundary covered by younger material (rare)
+- **Inferred** — boundary inferred from indirect evidence (rare)
+
+The bundle also includes geologic unit polygons (`GeoUnits.shp`) classified
+by age epoch (Pre-Nectarian / Nectarian / Imbrian / Eratosthenian /
+Copernican) and unit type (Crater Unit, Upper Crater Unit, etc.), and
+linear features (rilles, ridges, scarps, basin rings). Currently we
+render only the contacts; the units and linear features are available
+for future use.
+
+**Coordinate System:** Source data is `Moon2000_EquidistantCylindrical_clon0`
+(Equirectangular projection on the Moon 2000 IAU/IAG sphere, 1737400 m
+radius, units = meters). Reprojected to geographic lat/lon decimal
+degrees on the same sphere for web rendering.
+**Data Format:** Original ESRI shapefile bundle (~214 MB ZIP); converted
+to GeoJSON for web use. Output `moon_geologic.geojson` is ~1 MB after
+filtering and simplification.
 **License:** Public Domain (U.S. Government work, USGS/NASA).
 
-**Best-effort attribution.** This is a working data set assembled from
-public-domain sources for educational use. If you spot a feature attributed
-incorrectly or have access to a more authoritative replacement (LRO LOLA-
-derived, for example), please open a PR.
+**Regeneration:**
+```bash
+# Requires: pip install geopandas fiona shapely
+# 1. Download the GIS bundle from the URL above
+# 2. Extract under examples/hard-scifi/data/usgs_raw/moon/extracted/
+#    so that Lunar_GIS/Shapefiles/GeoContacts.shp is reachable
+# 3. Run the converter:
+python scripts/data-gen/convert_moon.py
+```
 
+The converter drops `DND` (do-not-display) and `Map boundary` rows,
+filters to features whose source-projected length is at least 150 km,
+simplifies geometry at 0.5° tolerance (auto-escalates if the output
+exceeds ~1.5 MB), reprojects to lat/lon, and renames the source's
+`ContactTyp` column to `ConType` for parity with the Mars contacts file.
+
+**Educational Use:** Freely available for educational, research, and
+commercial use with proper attribution.
 **Citation:**
-> Lunar mare boundaries and crater data from the USGS Astrogeology
-> Science Center / IAU Gazetteer of Planetary Nomenclature, public
-> domain. Feature names follow IAU conventions.
+> Fortezzo, C.M., Spudis, P.D., and Harrel, S.L., 2020, Unified
+> Geologic Map of the Moon, 1:5M scale (Version 2): U.S. Geological
+> Survey, prepared for NASA.
+
+---
+
+## Moon: IAU Feature Labels
+
+**Source:** IAU Gazetteer of Planetary Nomenclature (USGS-hosted)
+**URL:** https://planetarynames.wr.usgs.gov/
+
+**Description:**
+Named feature labels (mare, oceanus, sinus, lacus, craters, valles, etc.)
+with center lat/lon and feature diameter, used to overlay landmark names
+on the FDO console globe. Filtered at render time to the top-N largest
+features from selected IAU types.
+
+**Data Format:** JSON list of `{name, lon, lat, diameter, type}` records
+in `moon_labels.json`.
+**License:** Public Domain (USGS / IAU).
+**Citation:**
+> Lunar feature names from the IAU Gazetteer of Planetary Nomenclature,
+> hosted by the USGS Astrogeology Science Center.
 
 ---
 
