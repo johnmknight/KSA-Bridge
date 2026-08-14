@@ -303,7 +303,7 @@ public class TelemetryPublisher
             var performance = new
             {
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                deltaV = nav.DeltaVInVacuum,
+                deltaV = nav.DeltaV,   // renamed from DeltaVInVacuum in KSA 2026.8.x
                 twr = nav.ThrustWeightRatio,
                 inertMass = vehicle.InertMass
             };
@@ -323,7 +323,9 @@ public class TelemetryPublisher
     {
         try
         {
-            var situation = vehicle.LastKinematicStates.Situation;
+            // KSA 2026.8.x: Situation moved off the kinematic-state struct and is
+            // now exposed directly on Vehicle (backed by VehicleProperties.Situation).
+            var situation = vehicle.Situation;
             var status = new
             {
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -478,7 +480,11 @@ public class TelemetryPublisher
                 angAccelX = angAccBody.x,
                 angAccelY = angAccBody.y,
                 angAccelZ = angAccBody.z,
-                propellantMassFlowRate = km.PropellantMassFlowRate
+                // KSA 2026.8.x removed the vehicle-level PropellantMassFlowRate
+                // aggregate (flow rate is now tracked per-nozzle on ActiveNozzle).
+                // No console consumed the old field, so we publish the remaining
+                // vehicle-level truth instead: total propellant mass aboard (kg).
+                propellantMass = vehicle.PropellantMass
             };
 
             var topic = $"{_config.TopicPrefix}/telemetry/dynamics";
@@ -496,19 +502,23 @@ public class TelemetryPublisher
     {
         try
         {
-            var ks = vehicle.LastKinematicStates;
+            // KSA 2026.8.x split the old LastKinematicStates struct:
+            //   environment readings  -> Vehicle.PhysicsEnvironment
+            //   geometric properties  -> Vehicle.Props (VehicleProperties)
+            ref readonly var env = ref vehicle.PhysicsEnvironment;
+            ref readonly var props = ref vehicle.Props;
 
             var atmosphere = new
             {
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                atmosphericDensity = ks.AtmosphericDensity,
-                atmosphericPressure = ks.AtmosphericPressure,
-                oceanDensity = ks.OceanDensity,
-                terrainRadius = ks.TerrainRadius,
-                oceanRadius = ks.OceanRadius,
-                totalSurfaceArea = ks.TotalSurfaceArea,
-                totalVolume = ks.TotalVolume,
-                draft = ks.Draft
+                atmosphericDensity = env.AtmosphericDensity,
+                atmosphericPressure = env.AtmosphericPressure,
+                oceanDensity = env.OceanDensity,
+                terrainRadius = env.TerrainRadius,
+                oceanRadius = env.OceanRadius,
+                totalSurfaceArea = props.TotalSurfaceArea,
+                totalVolume = props.TotalVolume,
+                draft = props.Draft
             };
 
             var topic = $"{_config.TopicPrefix}/telemetry/atmosphere";
