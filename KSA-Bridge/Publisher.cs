@@ -46,24 +46,38 @@ public class Publisher : IAsyncDisposable
     {
         var offline = JsonSerializer.Serialize(new { status = "offline" });
 
-        var options = new MqttClientOptionsBuilder()
+        var optionsBuilder = new MqttClientOptionsBuilder()
             .WithTcpServer(_config.BrokerHost, (int?)_config.BrokerPort, AddressFamily.Unspecified)
             .WithClientId(_config.ClientId)
             .WithKeepAlivePeriod(TimeSpan.FromSeconds(_config.KeepAlive))
             .WithWillTopic(StatusTopic)
             .WithWillPayload(offline)
-            .WithWillRetain(true)
-            .WithCleanSession(true)
-            .Build();
+            .WithTlsOptions(tlsOptions => tlsOptions.UseTls(_config.Tls).WithAllowUntrustedCertificates(_config.AllowUntrusted));
+
+        if (_config.Username != null && _config.Password != null)
+        {
+            optionsBuilder.WithCredentials(_config.Username, _config.Password);
+            BridgeLog.Log.Debug("username and password set");
+        }
+        
+        var options = optionsBuilder.Build();
 
         try
         {
             _state.Status = ConnectionStatus.Connecting;
-            await _client.ConnectAsync(options);
+            var connectResult = await _client.ConnectAsync(options);
+
+            if (connectResult.ResultCode != MqttClientConnectResultCode.Success)
+            {
+                _state.Status = ConnectionStatus.Disconnected;
+                _state.LastError = $"MQTT connect rejected: {connectResult.ResultCode}";
+                BridgeLog.Log.Error($"Failed to connect to broker, code: {connectResult.ResultCode}");
+                return;
+            }
 
             // Subscribe to command topics
             await _client.SubscribeAsync(CmdTopicRoot);
-
+            
             // On (re)connect: clear change-detection cache (Lesson 3.4)
             // and publish immediate status
             _state.ConnectedAt = DateTime.UtcNow;
@@ -71,13 +85,13 @@ public class Publisher : IAsyncDisposable
             _state.LastError   = string.Empty;
 
             await PublishStatusAsync("online");
-            Console.WriteLine($"[KSA-Bridge] Connected to {_config.BrokerHost}:{_config.BrokerPort}");
+            BridgeLog.Log.Info($"[KSA-Bridge] Connected to {_config.BrokerHost}:{_config.BrokerPort}");
         }
         catch (Exception ex)
         {
             _state.Status    = ConnectionStatus.Disconnected;
             _state.LastError = ex.Message;
-            Console.WriteLine($"[KSA-Bridge] Connect failed: {ex.Message}");
+            BridgeLog.Log.Error($"Connect failed: {ex}");
         }
     }
 
